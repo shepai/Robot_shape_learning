@@ -35,6 +35,7 @@ class Env:
             cameraPitch=-30,           # tilt up/down
             cameraTargetPosition=[0,0,0.5]  # where the camera looks
         )
+        self.move_Step_amount=0.2
     def step(self, steps=240):
         for _ in range(steps):
             p.stepSimulation()
@@ -60,7 +61,12 @@ class Env:
             block_pos = [0.5, 0.1 * i, 0.05]
             block_id = p.loadURDF("cube_small.urdf", block_pos)
             self.block_ids.append(block_id)
-
+            color = [np.random.random(), np.random.random(), np.random.random(), 1]
+            p.changeVisualShape(block_id, -1, rgbaColor=color)
+    def generate_block(self, position,colour):
+        block_id = p.loadURDF("cube_small.urdf", position)
+        self.block_ids.append(block_id)
+        p.changeVisualShape(block_id, -1, rgbaColor=colour)
     def pick_block(self, block_id):
         if self.holding_constraint is not None:
             print("Already holding a block!")
@@ -81,15 +87,52 @@ class Env:
             p.removeConstraint(self.holding_constraint)
             self.holding_constraint = None
 
-    def move_gripper_to(self, fingertip_coords, euler=[0, 3.14, 0]):
+    def move_gripper_to(self, fingertip_coords, euler=[0, 3.14, 0],vel=0.9):
         fingertip_coords=np.array(fingertip_coords)
         self.fingertip=fingertip_coords.copy()
-        fingertip_coords[2]+=0.08
+        
         orn = p.getQuaternionFromEuler(euler)
         joint_angles = p.calculateInverseKinematics(self.robot_id, self.ee_index, fingertip_coords, orn)
         for i in self.arm_joints:
-            p.setJointMotorControl2(self.robot_id, i, p.POSITION_CONTROL, joint_angles[i], force=300, maxVelocity=0.9)
-        self.step(540)
+            p.setJointMotorControl2(self.robot_id, i, p.POSITION_CONTROL, joint_angles[i], force=300, maxVelocity=vel)
+        current_pos = np.array(p.getLinkState(self.robot_id, self.ee_index)[0])
+        distance = np.linalg.norm(fingertip_coords - current_pos)
+        delay_time = distance / vel if vel > 0 else 0
+        self.step(max(int(600 * delay_time),1))
+    def move_up(self):
+        robot_coords=list(p.getLinkState(self.robot_id, linkIndex=self.ee_index)[0])
+        robot_coords[2]+=self.move_Step_amount
+        self.move_gripper_to(robot_coords)
+    def move_down(self):
+        robot_coords=list(p.getLinkState(self.robot_id, linkIndex=self.ee_index)[0])
+        robot_coords[2]-=self.move_Step_amount
+        self.move_gripper_to(robot_coords)
+    def left(self):
+        robot_coords=list(p.getLinkState(self.robot_id, linkIndex=self.ee_index)[0])
+        robot_coords[1]+=self.move_Step_amount
+        self.move_gripper_to(robot_coords)
+    def right(self):
+        robot_coords=list(p.getLinkState(self.robot_id, linkIndex=self.ee_index)[0])
+        robot_coords[1]-=self.move_Step_amount
+        self.move_gripper_to(robot_coords)
+    def forward(self):
+        robot_coords=list(p.getLinkState(self.robot_id, linkIndex=self.ee_index)[0])
+        robot_coords[0]+=self.move_Step_amount
+        self.move_gripper_to(robot_coords)
+    def backward(self):
+        robot_coords=list(p.getLinkState(self.robot_id, linkIndex=self.ee_index)[0])
+        robot_coords[0]-=self.move_Step_amount
+        self.move_gripper_to(robot_coords)
+    def get_observation(self):
+        blocks=[]
+        colours=[]
+        for i in range(len(self.block_ids)):
+            cube_pos, _ = p.getBasePositionAndOrientation(env.block_ids[i])
+            blocks.append(cube_pos)
+            visual_data = p.getVisualShapeData(env.block_ids[i])
+            colours.append(visual_data[0][7])
+        robot_coords=p.getLinkState(self.robot_id, linkIndex=self.ee_index)[0]
+        return {"blocks":blocks,"block_colours":colours,"robot_end_position":robot_coords,"holding_constraint":self.holding_constraint}
 
 if __name__=="__main__":
     env=Env()
@@ -97,6 +140,8 @@ if __name__=="__main__":
     env.record("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Videos/video_example.mp4")
     time.sleep(2)
     cube_pos, _ = p.getBasePositionAndOrientation(env.block_ids[0])
+    cube_pos=list(cube_pos)
+    cube_pos[2]+=0.08
     env.move_gripper_to(cube_pos)
     #time.sleep(2)
     env.pick_block(env.block_ids[0])
@@ -110,4 +155,9 @@ if __name__=="__main__":
     env.put_block()
     env.move_gripper_to(up)
     env.stop_record()
+    functions=[env.forward,env.backward,env.move_up,env.move_down,env.left,env.right]
+    for i in range(len(functions)):
+        for j in range(10):
+            functions[i]()
+
     env.step(10000)
