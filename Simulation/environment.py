@@ -21,11 +21,39 @@ class Env:
         # Block tracking
         self.block_ids = []
         self.fingertip_coords=[]
+        self.recording = False
+        self.video_id = None
+        self.timestep = timestep
+        p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)              # remove side panels
+        p.configureDebugVisualizer(p.COV_ENABLE_RGB_BUFFER_PREVIEW, 0)
+        p.configureDebugVisualizer(p.COV_ENABLE_DEPTH_BUFFER_PREVIEW, 0)
+        p.configureDebugVisualizer(p.COV_ENABLE_SEGMENTATION_MARK_PREVIEW, 0)
+        p.configureDebugVisualizer(p.COV_ENABLE_RENDERING, 1)        # keep rendering on
+        p.resetDebugVisualizerCamera(
+            cameraDistance=1.5,        # smaller = closer zoom
+            cameraYaw=45,              # rotate left/right
+            cameraPitch=-30,           # tilt up/down
+            cameraTargetPosition=[0,0,0.5]  # where the camera looks
+        )
     def step(self, steps=240):
         for _ in range(steps):
             p.stepSimulation()
             time.sleep(p.getPhysicsEngineParameters()['fixedTimeStep'])
-
+    def record(self, filename="simulation.mp4"):
+        """Start recording video of the GUI."""
+        if not self.recording:
+            self.video_id = p.startStateLogging(
+                p.STATE_LOGGING_VIDEO_MP4,
+                filename
+            )
+            self.recording = True
+            print(f"🎥 Recording started → {filename}")
+    def stop_record(self):
+        """Stop video recording."""
+        if self.recording:
+            p.stopStateLogging(self.video_id)
+            self.recording = False
+            print("📁 Recording stopped and saved.")
     def generate_blocks(self, num):
         self.block_ids = []
         for i in range(num):
@@ -34,22 +62,17 @@ class Env:
             self.block_ids.append(block_id)
 
     def pick_block(self, block_id):
-        """Attach a block to the end-effector"""
         if self.holding_constraint is not None:
             print("Already holding a block!")
             return
-        # Get current end-effector position
-        ee_pos, ee_orn = p.getLinkState(self.robot_id, self.ee_index)[:2]
-        # Create a fixed constraint to attach the block
+
+        # Attach directly at the end-effector origin
         self.holding_constraint = p.createConstraint(
-            parentBodyUniqueId=self.robot_id,
-            parentLinkIndex=self.ee_index,
-            childBodyUniqueId=block_id,
-            childLinkIndex=-1,
-            jointType=p.JOINT_FIXED,
-            jointAxis=[0,0,0],
-            parentFramePosition=[0,0,0],
-            childFramePosition=[0,0,0]
+            self.robot_id, self.ee_index,
+            block_id, -1,
+            p.JOINT_FIXED,
+            [0, 0, 0],
+            [0, 0, 0.03], [0, 0, -0.03]
         )
 
     def put_block(self):
@@ -61,16 +84,17 @@ class Env:
     def move_gripper_to(self, fingertip_coords, euler=[0, 3.14, 0]):
         fingertip_coords=np.array(fingertip_coords)
         self.fingertip=fingertip_coords.copy()
-        fingertip_coords[2]+=0.05
+        fingertip_coords[2]+=0.08
         orn = p.getQuaternionFromEuler(euler)
         joint_angles = p.calculateInverseKinematics(self.robot_id, self.ee_index, fingertip_coords, orn)
         for i in self.arm_joints:
-            p.setJointMotorControl2(self.robot_id, i, p.POSITION_CONTROL, joint_angles[i], force=200, maxVelocity=0.9)
+            p.setJointMotorControl2(self.robot_id, i, p.POSITION_CONTROL, joint_angles[i], force=300, maxVelocity=0.9)
         self.step(540)
 
 if __name__=="__main__":
     env=Env()
     env.generate_blocks(4)
+    env.record("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Videos/video_example.mp4")
     time.sleep(2)
     cube_pos, _ = p.getBasePositionAndOrientation(env.block_ids[0])
     env.move_gripper_to(cube_pos)
@@ -79,4 +103,11 @@ if __name__=="__main__":
     up=np.array(cube_pos)
     up[2]+=0.6
     env.move_gripper_to(up)
-    time.sleep(10)
+    cube_pos, _ = p.getBasePositionAndOrientation(env.block_ids[1])
+    cube_pos=np.array(cube_pos)
+    cube_pos[2]+=0.1
+    env.move_gripper_to(cube_pos)
+    env.put_block()
+    env.move_gripper_to(up)
+    env.stop_record()
+    env.step(10000)
