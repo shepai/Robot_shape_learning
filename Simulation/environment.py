@@ -65,8 +65,8 @@ class Env:
             self.block_ids.append(block_id)
             color = [np.random.random(), np.random.random(), np.random.random(), 1]
             p.changeVisualShape(block_id, -1, rgbaColor=color)
-    def generate_block(self, position,colour):
-        block_id = p.loadURDF("cube_small.urdf", position)
+    def generate_block(self, position,colour,size=1):
+        block_id = p.loadURDF("cube_small.urdf", position, globalScaling=size)
         self.block_ids.append(block_id)
         p.changeVisualShape(block_id, -1, rgbaColor=colour)
     def pick_block(self, block_id):

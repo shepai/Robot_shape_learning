@@ -15,6 +15,8 @@ Task 5: throw a ball into a cup
 Task 6: Sort the missing pieces
 
 Task 7: Put the sizes in the right piles
+
+Task 8: Sort size in one axis and colour in the other
 """
 
 from copy import deepcopy 
@@ -206,7 +208,7 @@ class task3(task):
     def generate(self,env):
         colour=[np.random.randint(0,254)/255,np.random.randint(0,254)/255,np.random.randint(0,254)/255,1]
         shader=np.random.randint(0,3)
-        amount=np.random.randint(5,15)
+        amount=np.random.randint(5,10)
         blocks=np.zeros((amount,3))
         min_dist = 0.08
         for i in range(amount):
@@ -277,12 +279,40 @@ class task3(task):
         #TODO
         pass
 
+class task4(task):
+    def generate(self, env):
+        amount=np.random.randint(5,10)
+        sizes=np.random.uniform(0.1,2,(amount))
+        blocks=np.zeros((amount,3))
+        colour=[np.random.randint(0,254)/255,np.random.randint(0,254)/255,np.random.randint(0,254)/255,1]
+        min_dist = 0.08
+        for i in range(amount):
+            not_allowed=True 
+            t1=time.time()
+            t2=time.time()
+            while not_allowed and t2-t1<5:
+                t2=time.time()
+                position = np.array([np.random.uniform(low=0.4, high=0.6), np.random.uniform(low=0.0, high=0.6), 0.05])
+                # Check distances from all existing blocks
+                if len(blocks) == 0:
+                    blocks.append(position)
+                    break
+                distances = [np.linalg.norm(position[:2] - b[:2]) for b in blocks]
+                if all(d > min_dist for d in distances):
+                    not_allowed=False
+            env.generate_block(position,colour,sizes[i])
+    def solve(self,env,p):
+        env.step(24000)
+    def get_correctness(self,obs):
+        #should be in correct order
+        #TODO
+        pass
 if __name__=="__main__":
     from environment import *
-    env=Env(realtime=0)
-    task=task2()
+    env=Env(realtime=1)
+    task=task4()
     task.generate(env)
-    env.record("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Videos/task2_fast.mp4")
+    #env.record("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Videos/task2_fast.mp4")
     print("Correctness value:",task.get_correctness(env.get_observation()))
     task.solve(env,p)
     print("Correctness value:",task.get_correctness(env.get_observation()))
