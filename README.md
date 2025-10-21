@@ -6,7 +6,28 @@ The simulation uses pybullet, a 3D physics simulator made for python robotics in
 
 There are various tasks within the simulation such as building towers, organsing size/ colour etc... 
 
-
+<table>
+  <tr>
+    <td align="center">
+      <img src="Assets/Gifs/task1_fast.gif.gif" width="250"><br>
+      <b>Walk Cycle</b>
+    </td>
+    <td align="center">
+      <img src="Assets/Gifs/task2_fast.gif.gif" width="250"><br>
+      <b>Run Cycle</b>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="Assets/Gifs/task3_fast.gif.gif" width="250"><br>
+      <b>Walk Cycle</b>
+    </td>
+    <td align="center">
+      <img src="Assets/Gifs/task3_fast.gif.gif" width="250"><br>
+      <b>Run Cycle</b>
+    </td>
+  </tr>
+</table>
 
 ## Parent model 
 
