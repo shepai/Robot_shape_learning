@@ -2,13 +2,13 @@
 The task code has a number of challenges where we know what a correct solution is. Each task has its own destinct reward function to determine how well the 
 task was performed. This can also be used to generate a dataset of itmes and task. 
 
-Task 1: arrange into a tower <
+Task 1: arrange into a tower <<
 
 Task 2: sort the colours into three seperate towers <
 
-Task 3: Sort the shades into intensity order
+Task 3: Sort the shades into intensity order <
 
-Task 4: Sort into actual size order
+Task 4: Sort into actual size order 
 
 Task 5: throw a ball into a cup
 
@@ -129,13 +129,13 @@ class task1(task):
 
 class task2(task):
     """
-    Make a tower with all the blocks (no particular order)
+    Make a tower with all the blocks (colour particular order)
     """
     def generate(self,env):
         """
         Generate blocks in random places
         """
-        colours=[[255,0,0,1],[0,255,0,1],[0,0,255,1]]
+        colours=[[1,0,0,1],[0,1,0,1],[0,0,1,1]]
         amount=np.random.randint(5,15)
         blocks=np.zeros((amount,3))
         min_dist = 0.08
@@ -167,11 +167,11 @@ class task2(task):
         for i in range(len(env.block_ids)):
             visual_data = p.getVisualShapeData(env.block_ids[i])
             colour=visual_data[0][7]
-            if list(colour)==[255,0,0,1]:
+            if list(colour)==[1,0,0,1]:
                 targetidx=0
-            elif list(colour)==[0,255,0,1]:
+            elif list(colour)==[0,1,0,1]:
                 targetidx=1
-            elif list(colour)==[0,0,255,1]:
+            elif list(colour)==[0,0,1,1]:
                 targetidx=2
             target_pos=deepcopy(targets[targetidx])
             target_pos[2]+=heights[targetidx]
@@ -198,16 +198,92 @@ class task2(task):
         for i in range(len(env.block_ids)):
             visual_data = p.getVisualShapeData(env.block_ids[i])
             colour=visual_data[0][7]
-    
+        #TODO
+class task3(task):
+    """
+    Make a line with all the colours 
+    """
+    def generate(self,env):
+        colour=[np.random.randint(0,254)/255,np.random.randint(0,254)/255,np.random.randint(0,254)/255,1]
+        shader=np.random.randint(0,3)
+        amount=np.random.randint(5,15)
+        blocks=np.zeros((amount,3))
+        min_dist = 0.08
+        for i in range(amount):
+            not_allowed=True 
+            t1=time.time()
+            t2=time.time()
+            while not_allowed and t2-t1<5:
+                t2=time.time()
+                position = np.array([np.random.uniform(low=0.4, high=0.6), np.random.uniform(low=0.0, high=0.6), 0.05])
+                # Check distances from all existing blocks
+                if len(blocks) == 0:
+                    blocks.append(position)
+                    break
+                distances = [np.linalg.norm(position[:2] - b[:2]) for b in blocks]
+                if all(d > min_dist for d in distances):
+                    not_allowed=False
+            blocks[i]=position
+            colour[shader]-=(5*i)/255
+            if colour[shader]<0: colour[shader]=1-(5*i)/255
+            env.generate_block(position,colour)
+    def solve(self,env,p):
+        sorted_ids=[] 
+        shades=[]
+        for i in range(len(env.block_ids)):
+            visual_data = p.getVisualShapeData(env.block_ids[i])
+            colour=visual_data[0][7]
+            grey_intensity=0.299*colour[0]+0.587*colour[1]+0.114*colour[2]
+            if len(shades)==0:
+                shades.append(grey_intensity)
+                sorted_ids.append(i)
+            else:
+                change_made=True
+                j=0
+                while j<(len(shades)) and change_made: #insertion
+                    if grey_intensity>shades[j]:
+                        shades.insert(j,grey_intensity)
+                        sorted_ids.insert(j,i)
+                        change_made=not change_made
+                    j+=1
+                if j>=len(shades): 
+                    shades.append(grey_intensity)
+                    sorted_ids.append(i)
+        target_location=np.array([np.random.uniform(low=0.4, high=0.5), np.random.uniform(low=-0.6, high=0.0), 0.10])
 
+        for i in range(len(env.block_ids)): 
+            place_in_queue=sorted_ids.index(i)
+            temp_loc=deepcopy(target_location)
+            temp_loc[1]=temp_loc[1]-(place_in_queue*0.15)
+            cube_pos, _ = p.getBasePositionAndOrientation(env.block_ids[i]) #find id
+            cube_pos=list(cube_pos)
+            cube_pos[2]+=0.08
+            env.move_gripper_to(cube_pos) #move to just above it
+            env.pick_block(env.block_ids[i]) #pick up
+            cube_pos[2]+=0.38
+            env.move_gripper_to(cube_pos) #move up to avoid hitting into things
+            env.step(10)
+            cube_pos[0:2]=temp_loc[0:2]
+            env.move_gripper_to(cube_pos) #move up to avoid hitting into things
+            env.step(10)
+            env.move_gripper_to(temp_loc) #move to the target
+            env.step(15) #small delay
+            env.put_block() #release
+            env.move_gripper_to(cube_pos)
+        
+
+    def get_correctness(self,obs):
+        #should be in correct order
+        #TODO
+        pass
 
 if __name__=="__main__":
     from environment import *
     env=Env(realtime=0)
     task=task2()
     task.generate(env)
-    #env.record("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Videos/task2_fast.mp4")
+    env.record("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Videos/task2_fast.mp4")
     print("Correctness value:",task.get_correctness(env.get_observation()))
     task.solve(env,p)
     print("Correctness value:",task.get_correctness(env.get_observation()))
-    #env.stop_record() 
+    env.stop_record() 
