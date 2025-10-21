@@ -1,5 +1,20 @@
 """
-The task code has a number of challenges where we know what a correct solution is
+The task code has a number of challenges where we know what a correct solution is. Each task has its own destinct reward function to determine how well the 
+task was performed. This can also be used to generate a dataset of itmes and task. 
+
+Task 1: arrange into a tower <
+
+Task 2: sort the colours into three seperate towers <
+
+Task 3: Sort the shades into intensity order
+
+Task 4: Sort into actual size order
+
+Task 5: throw a ball into a cup
+
+Task 6: Sort the missing pieces
+
+Task 7: Put the sizes in the right piles
 """
 
 from copy import deepcopy 
@@ -123,7 +138,7 @@ class task2(task):
         colours=[[255,0,0,1],[0,255,0,1],[0,0,255,1]]
         amount=np.random.randint(5,15)
         blocks=np.zeros((amount,3))
-        min_dist = 0.05
+        min_dist = 0.08
         for i in range(amount):
             not_allowed=True 
             t1=time.time()
@@ -142,13 +157,12 @@ class task2(task):
             blocks[i]=position
             env.generate_block(position,colours[np.random.randint(0,3)])
     def solve(self,env,p):
-        point=np.array([np.random.uniform(low=0.4, high=0.6), np.random.uniform(low=-0.6, high=0.0), 0.10])
+        point=np.array([np.random.uniform(low=0.3, high=0.4), np.random.uniform(low=-0.6, high=0.0), 0.10])
         targets=[]
         heights=[0,0,0]
         for i in range(3):
             targets.append(deepcopy(point))
             targets[i][0]+= 0.3 * i
-        print(targets)
         targetidx=-1
         for i in range(len(env.block_ids)):
             visual_data = p.getVisualShapeData(env.block_ids[i])
@@ -159,17 +173,17 @@ class task2(task):
                 targetidx=1
             elif list(colour)==[0,0,255,1]:
                 targetidx=2
-            print(targetidx,"\n\n")
             target_pos=deepcopy(targets[targetidx])
             target_pos[2]+=heights[targetidx]
-            print(target_pos)
             cube_pos, _ = p.getBasePositionAndOrientation(env.block_ids[i]) #find id
             cube_pos=list(cube_pos)
             cube_pos[2]+=0.08
             env.move_gripper_to(cube_pos) #move to just above it
             env.pick_block(env.block_ids[i]) #pick up
-            cube_pos[0:2]=target_pos[0:2]
             cube_pos[2]+=0.38
+            env.move_gripper_to(cube_pos) #move up to avoid hitting into things
+            env.step(10)
+            cube_pos[0:2]=target_pos[0:2]
             env.move_gripper_to(cube_pos) #move up to avoid hitting into things
             env.step(10)
             env.move_gripper_to(target_pos) #move to the target
@@ -177,18 +191,22 @@ class task2(task):
             env.put_block() #release
             env.move_gripper_to(cube_pos)
             #target_pos[2]+=0.05
-            heights[targetidx]+=0.5
+            heights[targetidx]+=0.05
 
     def get_correctness(self,obs):
         #find the average groupings
-        pass
+        for i in range(len(env.block_ids)):
+            visual_data = p.getVisualShapeData(env.block_ids[i])
+            colour=visual_data[0][7]
     
+
+
 if __name__=="__main__":
     from environment import *
-    env=Env(realtime=1)
+    env=Env(realtime=0)
     task=task2()
     task.generate(env)
-    #env.record("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Videos/task2.mp4")
+    #env.record("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Videos/task2_fast.mp4")
     print("Correctness value:",task.get_correctness(env.get_observation()))
     task.solve(env,p)
     print("Correctness value:",task.get_correctness(env.get_observation()))

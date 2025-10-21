@@ -135,7 +135,9 @@ class Env:
             colours.append(visual_data[0][7])
         robot_coords=p.getLinkState(self.robot_id, linkIndex=self.ee_index)[0]
         return {"blocks":blocks,"block_colours":colours,"robot_end_position":robot_coords,"holding_constraint":self.holding_constraint}
-
+    def recreate_from_file(self,file):
+        #TODO load in a file and recreate the objects where they should be
+        pass 
 if __name__=="__main__":
     env=Env()
     env.generate_blocks(4)
