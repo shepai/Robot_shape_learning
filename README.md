@@ -9,22 +9,22 @@ There are various tasks within the simulation such as building towers, organsing
 <table>
   <tr>
     <td align="center">
-      <img src="Assets/Gifs/task1_fast.gif.gif" width="250"><br>
-      <b>Walk Cycle</b>
+      <img src="Assets/Gifs/task1_fast.gif" width="250"><br>
+      <b>Challenge 1</b>
     </td>
     <td align="center">
-      <img src="Assets/Gifs/task2_fast.gif.gif" width="250"><br>
-      <b>Run Cycle</b>
+      <img src="Assets/Gifs/task2_fast.gif" width="250"><br>
+      <b>Challenge 2</b>
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="Assets/Gifs/task3_fast.gif.gif" width="250"><br>
-      <b>Walk Cycle</b>
+      <img src="Assets/Gifs/task3_fast.gif" width="250"><br>
+      <b>Challenge 3</b>
     </td>
     <td align="center">
-      <img src="Assets/Gifs/task3_fast.gif.gif" width="250"><br>
-      <b>Run Cycle</b>
+      <img src="Assets/Gifs/task3_fast.gif" width="250"><br>
+      <b>Challenge 4</b>
     </td>
   </tr>
 </table>
