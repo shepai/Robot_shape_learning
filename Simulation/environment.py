@@ -150,7 +150,7 @@ if __name__=="__main__":
     env.move_gripper_to(up)
     cube_pos, _ = p.getBasePositionAndOrientation(env.block_ids[1])
     cube_pos=np.array(cube_pos)
-    cube_pos[2]+=0.9
+    cube_pos[2]+=0.18
     env.move_gripper_to(cube_pos)
     env.put_block()
     env.move_gripper_to(up)
