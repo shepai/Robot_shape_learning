@@ -4,7 +4,7 @@ import time
 import numpy as np
 
 class Env:
-    def __init__(self, timestep=1/240.):
+    def __init__(self, timestep=1/240.,realtime=False):
         p.connect(p.GUI)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setGravity(0, 0, -9.81)
@@ -36,10 +36,12 @@ class Env:
             cameraTargetPosition=[0,0,0.5]  # where the camera looks
         )
         self.move_Step_amount=0.2
+        self.realtime=realtime
     def step(self, steps=240):
         for _ in range(steps):
             p.stepSimulation()
-            time.sleep(p.getPhysicsEngineParameters()['fixedTimeStep'])
+            if self.realtime:
+                time.sleep(p.getPhysicsEngineParameters()['fixedTimeStep'])
     def record(self, filename="simulation.mp4"):
         """Start recording video of the GUI."""
         if not self.recording:
@@ -98,7 +100,7 @@ class Env:
         current_pos = np.array(p.getLinkState(self.robot_id, self.ee_index)[0])
         distance = np.linalg.norm(fingertip_coords - current_pos)
         delay_time = distance / vel if vel > 0 else 0
-        self.step(max(int(600 * delay_time),1))
+        self.step(max(int(700 * delay_time),1))
     def move_up(self):
         robot_coords=list(p.getLinkState(self.robot_id, linkIndex=self.ee_index)[0])
         robot_coords[2]+=self.move_Step_amount
@@ -127,9 +129,9 @@ class Env:
         blocks=[]
         colours=[]
         for i in range(len(self.block_ids)):
-            cube_pos, _ = p.getBasePositionAndOrientation(env.block_ids[i])
+            cube_pos, _ = p.getBasePositionAndOrientation(self.block_ids[i])
             blocks.append(cube_pos)
-            visual_data = p.getVisualShapeData(env.block_ids[i])
+            visual_data = p.getVisualShapeData(self.block_ids[i])
             colours.append(visual_data[0][7])
         robot_coords=p.getLinkState(self.robot_id, linkIndex=self.ee_index)[0]
         return {"blocks":blocks,"block_colours":colours,"robot_end_position":robot_coords,"holding_constraint":self.holding_constraint}
