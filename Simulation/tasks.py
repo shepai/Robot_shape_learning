@@ -282,10 +282,10 @@ class task3(task):
 class task4(task):
     def generate(self, env):
         amount=np.random.randint(5,10)
-        sizes=np.random.uniform(0.1,2,(amount))
+        sizes=np.random.uniform(0.5,2,(amount))
         blocks=np.zeros((amount,3))
         colour=[np.random.randint(0,254)/255,np.random.randint(0,254)/255,np.random.randint(0,254)/255,1]
-        min_dist = 0.08
+        min_dist = 0.12
         for i in range(amount):
             not_allowed=True 
             t1=time.time()
@@ -302,7 +302,47 @@ class task4(task):
                     not_allowed=False
             env.generate_block(position,colour,sizes[i])
     def solve(self,env,p):
-        env.step(24000)
+        sorted_ids=[] 
+        shades=[]
+        for i in range(len(env.block_ids)):
+            aabb_min, aabb_max = p.getAABB(env.block_ids[i])
+            size = [aabb_max[i] - aabb_min[i] for i in range(3)]
+            if len(shades)==0:
+                shades.append(size)
+                sorted_ids.append(i)
+            else:
+                change_made=True
+                j=0
+                while j<(len(shades)) and change_made: #insertion
+                    if size>shades[j]:
+                        shades.insert(j,size)
+                        sorted_ids.insert(j,i)
+                        change_made=not change_made
+                    j+=1
+                if j>=len(shades): 
+                    shades.append(size)
+                    sorted_ids.append(i)
+        target_location=np.array([np.random.uniform(low=0.4, high=0.5), np.random.uniform(low=-0.6, high=0.0), 0.10])
+
+        for i in range(len(env.block_ids)): 
+            place_in_queue=sorted_ids.index(i)
+            temp_loc=deepcopy(target_location)
+            temp_loc[1]=temp_loc[1]-(place_in_queue*0.17)
+            cube_pos, _ = p.getBasePositionAndOrientation(env.block_ids[i]) #find id
+            cube_pos=list(cube_pos)
+            cube_pos[2]+=0.08
+            env.move_gripper_to(cube_pos) #move to just above it
+            env.pick_block(env.block_ids[i]) #pick up
+            cube_pos[2]+=0.38
+            env.move_gripper_to(cube_pos) #move up to avoid hitting into things
+            env.step(10)
+            cube_pos[0:2]=temp_loc[0:2]
+            env.move_gripper_to(cube_pos) #move up to avoid hitting into things
+            env.step(10)
+            env.move_gripper_to(temp_loc) #move to the target
+            env.step(15) #small delay
+            env.put_block() #release
+            env.move_gripper_to(cube_pos)
     def get_correctness(self,obs):
         #should be in correct order
         #TODO
@@ -312,7 +352,7 @@ if __name__=="__main__":
     env=Env(realtime=1)
     task=task4()
     task.generate(env)
-    #env.record("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Videos/task2_fast.mp4")
+    env.record("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Videos/task4.mp4")
     print("Correctness value:",task.get_correctness(env.get_observation()))
     task.solve(env,p)
     print("Correctness value:",task.get_correctness(env.get_observation()))
