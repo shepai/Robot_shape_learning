@@ -23,7 +23,10 @@ from copy import deepcopy
 import time 
 import pickle
 import numpy as np
-
+class demo:
+    def __init__(self,env,task):
+        self.env=env 
+        self.task=task
 class task:
     def __init__(self):
         self.attempts=0
@@ -32,6 +35,7 @@ class task:
         self.trial=0
         self.fitnesshistory=[]
         self.currentfit=[]
+        self.loaded=False
     def get_correctness(self,observations):
         """
         Takes in observation
@@ -50,10 +54,22 @@ class task:
         pass 
     def generate(self,p):
         pass
-    def save_details(self):
+    def save_details(self,filename,env):
         #save the objects, start positions, trial number, possible outcome 
         #csv and link file to environment 
-        pass
+        to_save=demo(env,self)
+        with open(filename, 'wb') as f:
+            pickle.dump(to_save, f)
+    def load_details(self,filename,env):
+        if ".pkl" not in filename: filename+=".pkl"
+        with open(filename, 'rb') as f:
+            to_save = pickle.load(f)
+        self.__dict__.update(to_save.task.__dict__)
+        #update environment
+        env.recreate_from_file(to_save.env)
+        self.loaded=True
+
+
 class task1(task):
     """
     Make a tower with all the blocks (no particular order)
@@ -327,7 +343,7 @@ class task4(task):
         for i in range(len(env.block_ids)): 
             place_in_queue=sorted_ids.index(i)
             temp_loc=deepcopy(target_location)
-            temp_loc[1]=temp_loc[1]-(place_in_queue*0.17)
+            temp_loc[1]=temp_loc[1]-(place_in_queue*0.13)
             cube_pos, _ = p.getBasePositionAndOrientation(env.block_ids[i]) #find id
             cube_pos=list(cube_pos)
             cube_pos[2]+=0.08
@@ -345,15 +361,24 @@ class task4(task):
             env.move_gripper_to(cube_pos)
     def get_correctness(self,obs):
         #should be in correct order
-        #TODO
+        #TODO  
         pass
 if __name__=="__main__":
     from environment import *
-    env=Env(realtime=1)
-    task=task4()
+    env=Env(realtime=0)
+    task=task2()
     task.generate(env)
     env.record("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Videos/task4.mp4")
     print("Correctness value:",task.get_correctness(env.get_observation()))
     task.solve(env,p)
     print("Correctness value:",task.get_correctness(env.get_observation()))
     env.stop_record() 
+    task.save_details("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Data/example.pkl",env)
+    #test save
+    env.close()
+    del env 
+    del task 
+    env=Env(realtime=0)
+    task=task4()
+    task.load_details("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Data/example.pkl",env)
+    task.solve(env,p)

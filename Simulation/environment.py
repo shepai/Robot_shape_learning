@@ -7,36 +7,11 @@ class Env:
     def __init__(self, timestep=1/240.,realtime=False):
         p.connect(p.GUI)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
-        p.setGravity(0, 0, -9.81)
-        p.setTimeStep(timestep)
-        p.loadURDF("plane.urdf")
-
-        self.robot_id = p.loadURDF("kuka_iiwa/model.urdf", useFixedBase=True)
-        p.resetBasePositionAndOrientation(self.robot_id, [0, 0, 0], [0, 0, 0, 1])
-        self.block_ids = []
-        self.ee_index = 6  # End effector link
-        self.gripper_joints = [7, 8]
-        self.arm_joints = list(range(7))
-        self.holding_constraint = None
-        # Block tracking
-        self.block_ids = []
-        self.fingertip_coords=[]
-        self.recording = False
-        self.video_id = None
-        self.timestep = timestep
-        p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)              # remove side panels
-        p.configureDebugVisualizer(p.COV_ENABLE_RGB_BUFFER_PREVIEW, 0)
-        p.configureDebugVisualizer(p.COV_ENABLE_DEPTH_BUFFER_PREVIEW, 0)
-        p.configureDebugVisualizer(p.COV_ENABLE_SEGMENTATION_MARK_PREVIEW, 0)
-        p.configureDebugVisualizer(p.COV_ENABLE_RENDERING, 1)        # keep rendering on
-        p.resetDebugVisualizerCamera(
-            cameraDistance=1.5,        # smaller = closer zoom
-            cameraYaw=45,              # rotate left/right
-            cameraPitch=-30,           # tilt up/down
-            cameraTargetPosition=[0,0,0.5]  # where the camera looks
-        )
-        self.move_Step_amount=0.2
-        self.realtime=realtime
+        self.reset(timestep=1/240.,realtime=False)
+        self.block_file=[]
+        self.positions=[]
+        self.colours=[]
+        self.sizes=[]
     def step(self, steps=240):
         for _ in range(steps):
             p.stepSimulation()
@@ -62,12 +37,26 @@ class Env:
         for i in range(num):
             block_pos = [0.5, 0.1 * i, 0.05]
             block_id = p.loadURDF("cube_small.urdf", block_pos)
+            colour = [np.random.random(), np.random.random(), np.random.random(), 1]
             self.block_ids.append(block_id)
-            color = [np.random.random(), np.random.random(), np.random.random(), 1]
-            p.changeVisualShape(block_id, -1, rgbaColor=color)
+            self.positions.append(block_pos)
+            self.colours.append(colour)
+            self.sizes.append(1)
+            p.changeVisualShape(block_id, -1, rgbaColor=colour)
+            self.block_file.append("cube_small.urdf")
+    def populate(self): #populate like the generate function does, but with all objects
+        for i in range(len(self.block_ids)):
+            block_pos=self.positions[i]
+            block_id = p.loadURDF(self.block_file[i], block_pos,globalScaling=self.sizes[i])
+            p.changeVisualShape(block_id, -1, rgbaColor=self.colours[i])
+
     def generate_block(self, position,colour,size=1):
         block_id = p.loadURDF("cube_small.urdf", position, globalScaling=size)
         self.block_ids.append(block_id)
+        self.positions.append(position)
+        self.block_file.append("cube_small.urdf")
+        self.sizes.append(size)
+        self.colours.append(colour)
         p.changeVisualShape(block_id, -1, rgbaColor=colour)
     def pick_block(self, block_id):
         if self.holding_constraint is not None:
@@ -135,9 +124,45 @@ class Env:
             colours.append(visual_data[0][7])
         robot_coords=p.getLinkState(self.robot_id, linkIndex=self.ee_index)[0]
         return {"blocks":blocks,"block_colours":colours,"robot_end_position":robot_coords,"holding_constraint":self.holding_constraint}
-    def recreate_from_file(self,file):
-        #TODO load in a file and recreate the objects where they should be
-        pass 
+    def recreate_from_file(self,env):
+        #=load in a file and recreate the objects where they should be
+        self.reset()
+        self.__dict__.update(env.__dict__)
+        self.populate()
+    def reset(self,timestep=1/240.,realtime=False):
+        p.resetSimulation()
+        p.setGravity(0, 0, -9.81)
+        p.setTimeStep(timestep)
+        p.loadURDF("plane.urdf")
+
+        self.robot_id = p.loadURDF("kuka_iiwa/model.urdf", useFixedBase=True)
+        p.resetBasePositionAndOrientation(self.robot_id, [0, 0, 0], [0, 0, 0, 1])
+        self.block_ids = []
+        self.ee_index = 6  # End effector link
+        self.gripper_joints = [7, 8]
+        self.arm_joints = list(range(7))
+        self.holding_constraint = None
+        # Block tracking
+        self.block_ids = []
+        self.fingertip_coords=[]
+        self.recording = False
+        self.video_id = None
+        self.timestep = timestep
+        p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)              # remove side panels
+        p.configureDebugVisualizer(p.COV_ENABLE_RGB_BUFFER_PREVIEW, 0)
+        p.configureDebugVisualizer(p.COV_ENABLE_DEPTH_BUFFER_PREVIEW, 0)
+        p.configureDebugVisualizer(p.COV_ENABLE_SEGMENTATION_MARK_PREVIEW, 0)
+        p.configureDebugVisualizer(p.COV_ENABLE_RENDERING, 1)        # keep rendering on
+        p.resetDebugVisualizerCamera(
+            cameraDistance=1.5,        # smaller = closer zoom
+            cameraYaw=45,              # rotate left/right
+            cameraPitch=-30,           # tilt up/down
+            cameraTargetPosition=[0,0,0.5]  # where the camera looks
+        )
+        self.move_Step_amount=0.2
+        self.realtime=realtime
+    def close(self):
+        p.disconnect()
 if __name__=="__main__":
     env=Env()
     env.generate_blocks(4)
@@ -163,5 +188,5 @@ if __name__=="__main__":
     for i in range(len(functions)):
         for j in range(10):
             functions[i]()
-
+    env.reset()
     env.step(10000)
