@@ -7,7 +7,9 @@ class Env:
     def __init__(self, timestep=1/240.,realtime=False):
         p.connect(p.GUI)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
-        self.reset(timestep=1/240.,realtime=False)
+        self.realtime=realtime
+        self.timestep=timestep
+        self.reset()
         
     def step(self, steps=240):
         for _ in range(steps):
@@ -48,11 +50,11 @@ class Env:
             p.changeVisualShape(block_id, -1, rgbaColor=self.colours[i])
 
 
-    def generate_block(self, position,colour,size=1): #generate the one random block
-        block_id = p.loadURDF("cube_small.urdf", position, globalScaling=size)
+    def generate_block(self, position,colour,size=1,blockname="cube_small.urdf"): #generate the one random block
+        block_id = p.loadURDF(blockname, position, globalScaling=size)
         self.block_ids.append(block_id)
         self.positions.append(position)
-        self.block_file.append("cube_small.urdf")
+        self.block_file.append(blockname)
         self.sizes.append(size)
         self.colours.append(colour)
         p.changeVisualShape(block_id, -1, rgbaColor=colour)
@@ -127,10 +129,10 @@ class Env:
         self.reset()
         self.__dict__.update(env.__dict__)
         self.populate()
-    def reset(self,timestep=1/240.,realtime=False): #reset the simulation and arm
+    def reset(self): #reset the simulation and arm
         p.resetSimulation()
         p.setGravity(0, 0, -9.81)
-        p.setTimeStep(timestep)
+        p.setTimeStep(self.timestep)
         p.loadURDF("plane.urdf")
         self.block_file=[]
         self.positions=[]
@@ -148,7 +150,7 @@ class Env:
         self.fingertip_coords=[]
         self.recording = False
         self.video_id = None
-        self.timestep = timestep
+        self.timestep = self.timestep
         p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)              # remove side panels
         p.configureDebugVisualizer(p.COV_ENABLE_RGB_BUFFER_PREVIEW, 0)
         p.configureDebugVisualizer(p.COV_ENABLE_DEPTH_BUFFER_PREVIEW, 0)
@@ -161,7 +163,7 @@ class Env:
             cameraTargetPosition=[0,0,0.5]  # where the camera looks
         )
         self.move_Step_amount=0.2
-        self.realtime=realtime
+        self.realtime=self.realtime
     def close(self):
         p.disconnect()
 if __name__=="__main__":
