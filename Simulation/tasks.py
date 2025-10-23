@@ -21,6 +21,8 @@ Task 8: Sort size in one axis and colour in the other
 Task 9: Look for the lowest colour and remove it from the pile
 
 Task 10: Place the four blocks given into a square 
+
+Task 11: avoid flat surface to pick up objects underneth it and place them on top
 """
 
 from copy import deepcopy 
@@ -373,6 +375,7 @@ class task5(task):
         amount=np.random.randint(5,10)
         colour=[np.random.randint(0,254)/255,np.random.randint(0,254)/255,np.random.randint(0,254)/255,1]
         env.generate_block([np.random.random(),np.random.random(),np.random.random()],colour,1,"sphere_small.urdf")
+        env.makeHoop()
     def solve(self,env,p):
         sorted_ids=[] 
         shades=[]

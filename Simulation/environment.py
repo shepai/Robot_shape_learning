@@ -129,6 +129,17 @@ class Env:
         self.reset()
         self.__dict__.update(env.__dict__)
         self.populate()
+    def makeHoop(self):
+        radius = 0.3
+        thickness = 0.02
+        height = 0.5
+        for i in range(8):
+            angle = i * (2 * np.pi / 8)
+            x = radius * np.cos(angle)
+            y = radius * np.sin(angle)
+            box = p.createCollisionShape(p.GEOM_BOX, halfExtents=[thickness, 0.05, 0.05])
+            vis = p.createVisualShape(p.GEOM_BOX, halfExtents=[thickness, 0.05, 0.05], rgbaColor=[1, 0.5, 0, 1])
+            p.createMultiBody(0, box, vis, [x+0.6, y+0.6, height], p.getQuaternionFromEuler([0, 0, angle]))
     def reset(self): #reset the simulation and arm
         p.resetSimulation()
         p.setGravity(0, 0, -9.81)
