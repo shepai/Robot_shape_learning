@@ -8,10 +8,7 @@ class Env:
         p.connect(p.GUI)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         self.reset(timestep=1/240.,realtime=False)
-        self.block_file=[]
-        self.positions=[]
-        self.colours=[]
-        self.sizes=[]
+        
     def step(self, steps=240):
         for _ in range(steps):
             p.stepSimulation()
@@ -32,7 +29,7 @@ class Env:
             p.stopStateLogging(self.video_id)
             self.recording = False
             print("📁 Recording stopped and saved.")
-    def generate_blocks(self, num):
+    def generate_blocks(self, num): #generate lots of random blocks
         self.block_ids = []
         for i in range(num):
             block_pos = [0.5, 0.1 * i, 0.05]
@@ -50,7 +47,8 @@ class Env:
             block_id = p.loadURDF(self.block_file[i], block_pos,globalScaling=self.sizes[i])
             p.changeVisualShape(block_id, -1, rgbaColor=self.colours[i])
 
-    def generate_block(self, position,colour,size=1):
+
+    def generate_block(self, position,colour,size=1): #generate the one random block
         block_id = p.loadURDF("cube_small.urdf", position, globalScaling=size)
         self.block_ids.append(block_id)
         self.positions.append(position)
@@ -58,7 +56,7 @@ class Env:
         self.sizes.append(size)
         self.colours.append(colour)
         p.changeVisualShape(block_id, -1, rgbaColor=colour)
-    def pick_block(self, block_id):
+    def pick_block(self, block_id): #pick up the block hovering over
         if self.holding_constraint is not None:
             print("Already holding a block!")
             return
@@ -78,7 +76,7 @@ class Env:
             p.removeConstraint(self.holding_constraint)
             self.holding_constraint = None
 
-    def move_gripper_to(self, fingertip_coords, euler=[0, 3.14, 0],vel=0.9):
+    def move_gripper_to(self, fingertip_coords, euler=[0, 3.14, 0],vel=0.9): #use kinematics to move towards the robot
         fingertip_coords=np.array(fingertip_coords)
         self.fingertip=fingertip_coords.copy()
         
@@ -114,7 +112,7 @@ class Env:
         robot_coords=list(p.getLinkState(self.robot_id, linkIndex=self.ee_index)[0])
         robot_coords[0]-=self.move_Step_amount
         self.move_gripper_to(robot_coords)
-    def get_observation(self):
+    def get_observation(self): #return information about the enivornment
         blocks=[]
         colours=[]
         for i in range(len(self.block_ids)):
@@ -129,21 +127,24 @@ class Env:
         self.reset()
         self.__dict__.update(env.__dict__)
         self.populate()
-    def reset(self,timestep=1/240.,realtime=False):
+    def reset(self,timestep=1/240.,realtime=False): #reset the simulation and arm
         p.resetSimulation()
         p.setGravity(0, 0, -9.81)
         p.setTimeStep(timestep)
         p.loadURDF("plane.urdf")
-
+        self.block_file=[]
+        self.positions=[]
+        self.colours=[]
+        self.sizes=[]
+        self.block_ids = []
         self.robot_id = p.loadURDF("kuka_iiwa/model.urdf", useFixedBase=True)
         p.resetBasePositionAndOrientation(self.robot_id, [0, 0, 0], [0, 0, 0, 1])
-        self.block_ids = []
         self.ee_index = 6  # End effector link
         self.gripper_joints = [7, 8]
         self.arm_joints = list(range(7))
         self.holding_constraint = None
         # Block tracking
-        self.block_ids = []
+        
         self.fingertip_coords=[]
         self.recording = False
         self.video_id = None
@@ -189,4 +190,6 @@ if __name__=="__main__":
         for j in range(10):
             functions[i]()
     env.reset()
+    env.populate()
     env.step(10000)
+    time.sleep(10)

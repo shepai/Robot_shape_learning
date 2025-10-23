@@ -379,6 +379,6 @@ if __name__=="__main__":
     del env 
     del task 
     env=Env(realtime=0)
-    task=task4()
+    task=task2()
     task.load_details("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Data/example.pkl",env)
     task.solve(env,p)
