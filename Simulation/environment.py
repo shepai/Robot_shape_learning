@@ -41,6 +41,7 @@ class Env:
             self.positions.append(block_pos)
             self.colours.append(colour)
             self.sizes.append(1)
+            self.physics.append(1)
             p.changeVisualShape(block_id, -1, rgbaColor=colour)
             self.block_file.append("cube_small.urdf")
     def populate(self): #populate like the generate function does, but with all objects
@@ -49,7 +50,7 @@ class Env:
             if type(self.block_file[i])==type("") and "flat_" in self.block_file[i]:
                 collision = p.createCollisionShape(p.GEOM_BOX, halfExtents=self.sizes[i])
                 visual = p.createVisualShape(p.GEOM_BOX, halfExtents=self.sizes[i], rgbaColor=self.colours[i])
-                block_id = p.createMultiBody(baseMass=1, baseCollisionShapeIndex=collision,
+                block_id = p.createMultiBody(baseMass=self.physics[i], baseCollisionShapeIndex=collision,
                                 baseVisualShapeIndex=visual, basePosition=block_pos)
             else:
                 block_id = p.loadURDF(self.block_file[i], block_pos,globalScaling=self.sizes[i])
@@ -61,6 +62,7 @@ class Env:
         self.block_file.append(blockname)
         self.sizes.append(size)
         self.colours.append(colour)
+        self.physics.append(1)
         p.changeVisualShape(block_id, -1, rgbaColor=colour)
     def pick_block(self, block_id): #pick up the block hovering over
         if self.holding_constraint is not None:
@@ -131,7 +133,11 @@ class Env:
     def recreate_from_file(self,env):
         #=load in a file and recreate the objects where they should be
         self.reset()
+        temp=self.realtime 
+        temp2=self.timestep
         self.__dict__.update(env.__dict__)
+        self.realtime=temp 
+        self.timestep=temp2
         self.populate()
     def makeFlat(self,position,colour,length = 0.6,width  = 0.2,height = 0.1,base=1): #make a flat block
         halfExtents = [length / 2, width / 2, height / 2]
@@ -143,6 +149,7 @@ class Env:
         self.positions.append(position)
         self.block_file.append("flat_")
         self.sizes.append(halfExtents)
+        self.physics.append(base)
         self.colours.append(colour)
         p.changeVisualShape(block_id, -1, rgbaColor=colour)
 
@@ -156,6 +163,7 @@ class Env:
         self.colours=[]
         self.sizes=[]
         self.block_ids = []
+        self.physics=[]
         self.robot_id = p.loadURDF("kuka_iiwa/model.urdf", useFixedBase=True)
         p.resetBasePositionAndOrientation(self.robot_id, [0, 0, 0], [0, 0, 0, 1])
         self.ee_index = 6  # End effector link

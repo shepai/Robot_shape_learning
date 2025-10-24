@@ -87,25 +87,26 @@ class task1(task):
         Generate blocks in random places
         """
         amount=np.random.randint(2,7)
-        blocks=np.zeros((amount,3))
+        blocks=[]
         min_dist = 0.1
         for i in range(amount):
             not_allowed=True 
             t1=time.time()
             t2=time.time()
-            while not_allowed and t2-t1<5:
+            while not_allowed and t2-t1<2:
                 t2=time.time()
                 position = np.array([np.random.uniform(low=0.4, high=0.6), np.random.uniform(low=0.0, high=0.6), 0.05])
                 # Check distances from all existing blocks
                 if len(blocks) == 0:
                     blocks.append(position)
                     break
-                distances = [np.linalg.norm(position[:2] - b[:2]) for b in blocks]
+                distances = [np.linalg.norm(position[:2] - b[:2]) for b in np.array(blocks)]
                 if all(d > min_dist for d in distances):
                     not_allowed=False
-
-            blocks[i]=position
-            env.generate_block(position,[np.random.random(), np.random.random(), np.random.random(), 1])
+            if t2-t1<2:
+                blocks.append(position)
+                env.generate_block(position,[np.random.random(), np.random.random(), np.random.random(), 1])
+        env.step(100)
     def solve(self,env,p):
         in_order=[]
         distances=[]
@@ -129,7 +130,7 @@ class task1(task):
                     distances.append(distance)
                     in_order.append(i)
 
-        target_pos=[np.random.uniform(low=0.4, high=0.6), np.random.uniform(low=-0.3, high=0.0), 0.10]
+        target_pos=[np.random.uniform(low=0.6, high=0.8), np.random.uniform(low=-0.3, high=-0.1), 0.10]
         for i in range(len(env.block_ids)):
             cube_pos, _ = p.getBasePositionAndOrientation(env.block_ids[in_order[i]]) #find id
             cube_pos=list(cube_pos)
@@ -164,27 +165,30 @@ class task2(task):
         """
         colours=[[1,0,0,1],[0,1,0,1],[0,0,1,1]]
         amount=np.random.randint(5,15)
-        blocks=np.zeros((amount,3))
-        min_dist = 0.08
+        blocks=[]
+        min_dist = 0.15
         for i in range(amount):
             not_allowed=True 
             t1=time.time()
             t2=time.time()
-            while not_allowed and t2-t1<5:
+            while not_allowed and t2-t1<2:
                 t2=time.time()
                 position = np.array([np.random.uniform(low=0.4, high=0.6), np.random.uniform(low=0.0, high=0.6), 0.05])
                 # Check distances from all existing blocks
                 if len(blocks) == 0:
                     blocks.append(position)
                     break
-                distances = [np.linalg.norm(position[:2] - b[:2]) for b in blocks]
+                distances = [np.linalg.norm(position[:2] - b[:2]) for b in np.array(blocks)]
                 if all(d > min_dist for d in distances):
                     not_allowed=False
-
-            blocks[i]=position
-            env.generate_block(position,colours[np.random.randint(0,3)])
+            if t2-t1<2:
+                blocks.append(position)
+                env.generate_block(position,colours[np.random.randint(0,3)])
+            else:
+                break
+        env.step(100)
     def solve(self,env,p):
-        point=np.array([np.random.uniform(low=0.3, high=0.4), np.random.uniform(low=-0.6, high=0.0), 0.10])
+        point=np.array([np.random.uniform(low=0.5, high=0.6), np.random.uniform(low=-0.6, high=0.0), 0.10])
         targets=[]
         heights=[0,0,0]
         for i in range(3):
@@ -235,26 +239,31 @@ class task3(task):
         colour=[np.random.randint(0,254)/255,np.random.randint(0,254)/255,np.random.randint(0,254)/255,1]
         shader=np.random.randint(0,3)
         amount=np.random.randint(5,10)
-        blocks=np.zeros((amount,3))
+        blocks=[]
         min_dist = 0.08
         for i in range(amount):
             not_allowed=True 
             t1=time.time()
             t2=time.time()
-            while not_allowed and t2-t1<5:
+            while not_allowed and t2-t1<2:
                 t2=time.time()
                 position = np.array([np.random.uniform(low=0.4, high=0.6), np.random.uniform(low=0.0, high=0.6), 0.05])
                 # Check distances from all existing blocks
                 if len(blocks) == 0:
                     blocks.append(position)
                     break
-                distances = [np.linalg.norm(position[:2] - b[:2]) for b in blocks]
+                distances = [np.linalg.norm(position[:2] - b[:2]) for b in np.array(blocks)]
                 if all(d > min_dist for d in distances):
                     not_allowed=False
-            blocks[i]=position
-            colour[shader]-=(5*i)/255
-            if colour[shader]<0: colour[shader]=1-(5*i)/255
-            env.generate_block(position,deepcopy(colour))
+            
+            if t2-t1<2:
+                env.generate_block(position,deepcopy(colour))
+                blocks.append(position)
+                colour[shader]-=(5*i)/255
+                if colour[shader]<0: colour[shader]=1-(5*i)/255
+            else:
+                break
+        env.step(100)
     def solve(self,env,p):
         sorted_ids=[] 
         shades=[]
@@ -310,14 +319,14 @@ class task4(task):
     def generate(self, env):
         amount=np.random.randint(5,10)
         sizes=np.random.uniform(0.5,2,(amount))
-        blocks=np.zeros((amount,3))
+        blocks=[]
         colour=[np.random.randint(0,254)/255,np.random.randint(0,254)/255,np.random.randint(0,254)/255,1]
-        min_dist = 0.12
+        min_dist = 0.15
         for i in range(amount):
             not_allowed=True 
             t1=time.time()
             t2=time.time()
-            while not_allowed and t2-t1<5:
+            while not_allowed and t2-t1<2:
                 t2=time.time()
                 position = np.array([np.random.uniform(low=0.4, high=0.6), np.random.uniform(low=0.0, high=0.6), 0.05])
                 # Check distances from all existing blocks
@@ -325,9 +334,15 @@ class task4(task):
                     blocks.append(position)
                     break
                 distances = [np.linalg.norm(position[:2] - b[:2]) for b in blocks]
-                if all(d > min_dist for d in distances):
+                if all(d > min_dist for d in np.array(distances)):
                     not_allowed=False
-            env.generate_block(position,deepcopy(colour),sizes[i])
+                    print("not allowed")
+            if t2-t1<2:
+                blocks.append(position)
+                env.generate_block(position,deepcopy(colour),sizes[i])
+            else:
+                break
+        env.step(100)
     def solve(self,env,p):
         sorted_ids=[] 
         shades=[]
@@ -381,6 +396,7 @@ class task5(task):
         colour=[np.random.randint(0,254)/255,np.random.randint(0,254)/255,np.random.randint(0,254)/255,1]
         env.generate_block([np.random.random(),np.random.random(),np.random.random()],colour,1,"sphere_small.urdf")
         env.makeFlat([-0.5,-0.5,0.2],colour,length = 0.6,width  = 0.6,height = 0.1,base=0)
+        env.step(100)
     def solve(self,env,p):
         ball=None 
         block=None
@@ -389,6 +405,7 @@ class task5(task):
                 block=env.block_ids[i]
             else: 
                 ball=env.block_ids[i]
+
         cube_pos, _ = p.getBasePositionAndOrientation(ball) #find id
         temp_loc, _ = p.getBasePositionAndOrientation(block) #find id
         cube_pos=list(cube_pos)
@@ -412,7 +429,7 @@ class task5(task):
         pass
 if __name__=="__main__":
     from environment import *
-    env=Env(realtime=0)
+    env=Env(realtime=1)
     task=task5()
     task.generate(env)
     #env.record("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Videos/task5.mp4")
