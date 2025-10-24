@@ -10,7 +10,7 @@ Task 3: Sort the shades into intensity order <
 
 Task 4: Sort into actual size order <
 
-Task 5: place the ball on top of the box
+Task 5: place the ball on top of the box <
 
 Task 6: Sort the missing pieces
 
@@ -395,7 +395,7 @@ class task5(task):
     def generate(self, env):
         colour=[np.random.randint(0,254)/255,np.random.randint(0,254)/255,np.random.randint(0,254)/255,1]
         env.generate_block([np.random.random(),np.random.random(),np.random.random()],colour,1,"sphere_small.urdf")
-        env.makeFlat([-0.5,-0.5,0.2],colour,length = 0.6,width  = 0.6,height = 0.1,base=0)
+        env.makeFlat([0.5,-0.5,0.2],colour,length = 0.6,width  = 0.6,height = 0.1,base=0)
         env.step(100)
     def solve(self,env,p):
         ball=None 
@@ -405,14 +405,15 @@ class task5(task):
                 block=env.block_ids[i]
             else: 
                 ball=env.block_ids[i]
-
         cube_pos, _ = p.getBasePositionAndOrientation(ball) #find id
         temp_loc, _ = p.getBasePositionAndOrientation(block) #find id
+        temp_loc=list(temp_loc)
+        temp_loc[2]+=0.15
         cube_pos=list(cube_pos)
         cube_pos[2]+=0.08
         env.move_gripper_to(cube_pos) #move to just above it
         env.step(10)
-        env.pick_block(env.block_ids[i]) #pick up
+        env.pick_block(ball) #pick up
         cube_pos[2]+=0.38
         env.move_gripper_to(cube_pos) #move up to avoid hitting into things
         env.step(10)
