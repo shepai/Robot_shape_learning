@@ -10,7 +10,7 @@ Task 3: Sort the shades into intensity order <
 
 Task 4: Sort into actual size order <
 
-Task 5: throw a ball into a cup
+Task 5: place the ball on top of the box
 
 Task 6: Sort the missing pieces
 
@@ -23,6 +23,8 @@ Task 9: Look for the lowest colour and remove it from the pile
 Task 10: Place the four blocks given into a square 
 
 Task 11: avoid flat surface to pick up objects underneth it and place them on top
+
+Task 12: Push on opposite side of bloc kresting on cylender, and it should be up in the air
 """
 
 from copy import deepcopy 
@@ -133,6 +135,7 @@ class task1(task):
             cube_pos=list(cube_pos)
             cube_pos[2]+=0.08
             env.move_gripper_to(cube_pos) #move to just above it
+            env.step(10)
             env.pick_block(env.block_ids[in_order[i]]) #pick up
             cube_pos[2]+=0.38
             env.move_gripper_to(cube_pos) #move up to avoid hitting into things
@@ -203,6 +206,7 @@ class task2(task):
             cube_pos=list(cube_pos)
             cube_pos[2]+=0.08
             env.move_gripper_to(cube_pos) #move to just above it
+            env.step(10)
             env.pick_block(env.block_ids[i]) #pick up
             cube_pos[2]+=0.38
             env.move_gripper_to(cube_pos) #move up to avoid hitting into things
@@ -250,7 +254,7 @@ class task3(task):
             blocks[i]=position
             colour[shader]-=(5*i)/255
             if colour[shader]<0: colour[shader]=1-(5*i)/255
-            env.generate_block(position,colour)
+            env.generate_block(position,deepcopy(colour))
     def solve(self,env,p):
         sorted_ids=[] 
         shades=[]
@@ -273,7 +277,7 @@ class task3(task):
                 if j>=len(shades): 
                     shades.append(grey_intensity)
                     sorted_ids.append(i)
-        target_location=np.array([np.random.uniform(low=0.4, high=0.5), np.random.uniform(low=-0.6, high=0.0), 0.10])
+        target_location=np.array([np.random.uniform(low=0.5, high=0.6), np.random.uniform(low=-0.1, high=0.0), 0.10])
 
         for i in range(len(env.block_ids)): 
             place_in_queue=sorted_ids.index(i)
@@ -283,6 +287,7 @@ class task3(task):
             cube_pos=list(cube_pos)
             cube_pos[2]+=0.08
             env.move_gripper_to(cube_pos) #move to just above it
+            env.step(10)
             env.pick_block(env.block_ids[i]) #pick up
             cube_pos[2]+=0.38
             env.move_gripper_to(cube_pos) #move up to avoid hitting into things
@@ -322,7 +327,7 @@ class task4(task):
                 distances = [np.linalg.norm(position[:2] - b[:2]) for b in blocks]
                 if all(d > min_dist for d in distances):
                     not_allowed=False
-            env.generate_block(position,colour,sizes[i])
+            env.generate_block(position,deepcopy(colour),sizes[i])
     def solve(self,env,p):
         sorted_ids=[] 
         shades=[]
@@ -344,16 +349,17 @@ class task4(task):
                 if j>=len(shades): 
                     shades.append(size)
                     sorted_ids.append(i)
-        target_location=np.array([np.random.uniform(low=0.4, high=0.5), np.random.uniform(low=-0.6, high=0.0), 0.10])
+        target_location=np.array([np.random.uniform(low=0.5, high=0.6), np.random.uniform(low=-0.1, high=0.0), 0.10])
 
         for i in range(len(env.block_ids)): 
             place_in_queue=sorted_ids.index(i)
             temp_loc=deepcopy(target_location)
-            temp_loc[1]=temp_loc[1]-(place_in_queue*0.13)
+            temp_loc[1]=temp_loc[1]-(place_in_queue*0.15)
             cube_pos, _ = p.getBasePositionAndOrientation(env.block_ids[i]) #find id
             cube_pos=list(cube_pos)
             cube_pos[2]+=0.08
             env.move_gripper_to(cube_pos) #move to just above it
+            env.step(10)
             env.pick_block(env.block_ids[i]) #pick up
             cube_pos[2]+=0.38
             env.move_gripper_to(cube_pos) #move up to avoid hitting into things
@@ -372,59 +378,41 @@ class task4(task):
 
 class task5(task):
     def generate(self, env):
-        amount=np.random.randint(5,10)
         colour=[np.random.randint(0,254)/255,np.random.randint(0,254)/255,np.random.randint(0,254)/255,1]
         env.generate_block([np.random.random(),np.random.random(),np.random.random()],colour,1,"sphere_small.urdf")
-        env.makeHoop()
+        env.makeFlat([-0.5,-0.5,0.2],colour,length = 0.6,width  = 0.6,height = 0.1,base=0)
     def solve(self,env,p):
-        sorted_ids=[] 
-        shades=[]
+        ball=None 
+        block=None
         for i in range(len(env.block_ids)):
-            aabb_min, aabb_max = p.getAABB(env.block_ids[i])
-            size = [aabb_max[i] - aabb_min[i] for i in range(3)]
-            if len(shades)==0:
-                shades.append(size)
-                sorted_ids.append(i)
-            else:
-                change_made=True
-                j=0
-                while j<(len(shades)) and change_made: #insertion
-                    if size>shades[j]:
-                        shades.insert(j,size)
-                        sorted_ids.insert(j,i)
-                        change_made=not change_made
-                    j+=1
-                if j>=len(shades): 
-                    shades.append(size)
-                    sorted_ids.append(i)
-        target_location=np.array([np.random.uniform(low=0.4, high=0.5), np.random.uniform(low=-0.6, high=0.0), 0.10])
-
-        for i in range(len(env.block_ids)): 
-            place_in_queue=sorted_ids.index(i)
-            temp_loc=deepcopy(target_location)
-            temp_loc[1]=temp_loc[1]-(place_in_queue*0.13)
-            cube_pos, _ = p.getBasePositionAndOrientation(env.block_ids[i]) #find id
-            cube_pos=list(cube_pos)
-            cube_pos[2]+=0.08
-            env.move_gripper_to(cube_pos) #move to just above it
-            env.pick_block(env.block_ids[i]) #pick up
-            cube_pos[2]+=0.38
-            env.move_gripper_to(cube_pos) #move up to avoid hitting into things
-            env.step(10)
-            cube_pos[0:2]=temp_loc[0:2]
-            env.move_gripper_to(cube_pos) #move up to avoid hitting into things
-            env.step(10)
-            env.move_gripper_to(temp_loc) #move to the target
-            env.step(15) #small delay
-            env.put_block() #release
-            env.move_gripper_to(cube_pos)
+            if type(env.block_file[i])==type("") and "flat_" in env.block_file[i]:
+                block=env.block_ids[i]
+            else: 
+                ball=env.block_ids[i]
+        cube_pos, _ = p.getBasePositionAndOrientation(ball) #find id
+        temp_loc, _ = p.getBasePositionAndOrientation(block) #find id
+        cube_pos=list(cube_pos)
+        cube_pos[2]+=0.08
+        env.move_gripper_to(cube_pos) #move to just above it
+        env.step(10)
+        env.pick_block(env.block_ids[i]) #pick up
+        cube_pos[2]+=0.38
+        env.move_gripper_to(cube_pos) #move up to avoid hitting into things
+        env.step(10)
+        cube_pos[0:2]=temp_loc[0:2]
+        env.move_gripper_to(cube_pos) #move up to avoid hitting into things
+        env.step(10)
+        env.move_gripper_to(temp_loc) #move to the target
+        env.step(15) #small delay
+        env.put_block() #release
+        env.move_gripper_to(cube_pos)
     def get_correctness(self,obs):
         #should be in correct order
         #TODO  
         pass
 if __name__=="__main__":
     from environment import *
-    env=Env(realtime=1)
+    env=Env(realtime=0)
     task=task5()
     task.generate(env)
     #env.record("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Videos/task5.mp4")
@@ -432,12 +420,12 @@ if __name__=="__main__":
     task.solve(env,p)
     print("Correctness value:",task.get_correctness(env.get_observation()))
     #env.stop_record() 
-    #task.save_details("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Data/example.pkl",env)
+    task.save_details("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Data/example.pkl",env)
     #test save
-    """env.close()
+    env.close()
     del env 
     del task 
     env=Env(realtime=0)
-    task=task2()
+    task=task5()
     task.load_details("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Data/example.pkl",env)
-    task.solve(env,p)"""
+    task.solve(env,p)

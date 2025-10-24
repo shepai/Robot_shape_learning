@@ -46,10 +46,14 @@ class Env:
     def populate(self): #populate like the generate function does, but with all objects
         for i in range(len(self.block_ids)):
             block_pos=self.positions[i]
-            block_id = p.loadURDF(self.block_file[i], block_pos,globalScaling=self.sizes[i])
-            p.changeVisualShape(block_id, -1, rgbaColor=self.colours[i])
-
-
+            if type(self.block_file[i])==type("") and "flat_" in self.block_file[i]:
+                collision = p.createCollisionShape(p.GEOM_BOX, halfExtents=self.sizes[i])
+                visual = p.createVisualShape(p.GEOM_BOX, halfExtents=self.sizes[i], rgbaColor=self.colours[i])
+                block_id = p.createMultiBody(baseMass=1, baseCollisionShapeIndex=collision,
+                                baseVisualShapeIndex=visual, basePosition=block_pos)
+            else:
+                block_id = p.loadURDF(self.block_file[i], block_pos,globalScaling=self.sizes[i])
+                p.changeVisualShape(block_id, -1, rgbaColor=self.colours[i])
     def generate_block(self, position,colour,size=1,blockname="cube_small.urdf"): #generate the one random block
         block_id = p.loadURDF(blockname, position, globalScaling=size)
         self.block_ids.append(block_id)
@@ -129,17 +133,19 @@ class Env:
         self.reset()
         self.__dict__.update(env.__dict__)
         self.populate()
-    def makeHoop(self):
-        radius = 0.3
-        thickness = 0.02
-        height = 0.5
-        for i in range(8):
-            angle = i * (2 * np.pi / 8)
-            x = radius * np.cos(angle)
-            y = radius * np.sin(angle)
-            box = p.createCollisionShape(p.GEOM_BOX, halfExtents=[thickness, 0.05, 0.05])
-            vis = p.createVisualShape(p.GEOM_BOX, halfExtents=[thickness, 0.05, 0.05], rgbaColor=[1, 0.5, 0, 1])
-            p.createMultiBody(0, box, vis, [x+0.6, y+0.6, height], p.getQuaternionFromEuler([0, 0, angle]))
+    def makeFlat(self,position,colour,length = 0.6,width  = 0.2,height = 0.1,base=1): #make a flat block
+        halfExtents = [length / 2, width / 2, height / 2]
+        collision = p.createCollisionShape(p.GEOM_BOX, halfExtents=halfExtents)
+        visual = p.createVisualShape(p.GEOM_BOX, halfExtents=halfExtents, rgbaColor=colour)
+        block_id = p.createMultiBody(baseMass=base, baseCollisionShapeIndex=collision,
+                        baseVisualShapeIndex=visual, basePosition=position)
+        self.block_ids.append(block_id)
+        self.positions.append(position)
+        self.block_file.append("flat_")
+        self.sizes.append(halfExtents)
+        self.colours.append(colour)
+        p.changeVisualShape(block_id, -1, rgbaColor=colour)
+
     def reset(self): #reset the simulation and arm
         p.resetSimulation()
         p.setGravity(0, 0, -9.81)
