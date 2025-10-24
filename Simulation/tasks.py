@@ -316,6 +316,9 @@ class task3(task):
         pass
 
 class task4(task):
+    """
+    Place in the sie of the block order
+    """
     def generate(self, env):
         amount=np.random.randint(5,10)
         sizes=np.random.uniform(0.5,2,(amount))
@@ -392,6 +395,9 @@ class task4(task):
         pass
 
 class task5(task):
+    """
+    Place the ball on the board
+    """
     def generate(self, env):
         colour=[np.random.randint(0,254)/255,np.random.randint(0,254)/255,np.random.randint(0,254)/255,1]
         env.generate_block([np.random.random(),np.random.random(),np.random.random()],colour,1,"sphere_small.urdf")
@@ -428,6 +434,24 @@ class task5(task):
         #should be in correct order
         #TODO  
         pass
+
+class task6(task):
+    """
+    Fill in the missing pieces
+    """
+    def generate(self, env):
+        pass 
+        #make lines of the same colour with missing slots, and then the missing pieces in another pile
+    def solve(self,env,p):
+        #calculate the mising spots and which colour it is
+        #pick up each block not in the main pile, then place in missing slot
+        pass
+    def get_correctness(self,obs):
+        #should be in correct order
+        #TODO  
+        pass
+
+
 if __name__=="__main__":
     from environment import *
     env=Env(realtime=1)
