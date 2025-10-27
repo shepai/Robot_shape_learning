@@ -4,18 +4,18 @@ import time
 import numpy as np
 
 class Env:
-    def __init__(self, timestep=1/240.,realtime=False):
+    def __init__(self, timestep=1/240.,realtime=False,speed=1):
         p.connect(p.GUI)
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         self.realtime=realtime
         self.timestep=timestep
         self.reset()
-        
+        self.speed=speed
     def step(self, steps=240):
         for _ in range(steps):
             p.stepSimulation()
             if self.realtime:
-                time.sleep(p.getPhysicsEngineParameters()['fixedTimeStep'])
+                time.sleep(p.getPhysicsEngineParameters()['fixedTimeStep']/self.speed)
     def record(self, filename="simulation.mp4"):
         """Start recording video of the GUI."""
         if not self.recording:
@@ -123,13 +123,28 @@ class Env:
     def get_observation(self): #return information about the enivornment
         blocks=[]
         colours=[]
+        names=[]
+        sizes=[]
+        contacts_=[]
         for i in range(len(self.block_ids)):
             cube_pos, _ = p.getBasePositionAndOrientation(self.block_ids[i])
             blocks.append(cube_pos)
             visual_data = p.getVisualShapeData(self.block_ids[i])
             colours.append(visual_data[0][7])
+            names.append(self.block_file[i])
+            sizes.append(self.sizes[i])
+            #get contact indicies
+            contact_pairs=[]
+            for j in range(i + 1, len(self.block_ids)):
+                contacts = p.getContactPoints(bodyA=self.block_ids[i], bodyB=self.block_ids[j])
+                if len(contacts) > 0:
+                    contact_pairs.append(j)
+            contacts_.append(contact_pairs)
+
         robot_coords=p.getLinkState(self.robot_id, linkIndex=self.ee_index)[0]
-        return {"blocks":blocks,"block_colours":colours,"robot_end_position":robot_coords,"holding_constraint":self.holding_constraint}
+        return {"blocks":blocks,"block_colours":colours,"robot_end_position":robot_coords,
+                "holding_constraint":self.holding_constraint,"block_name":names,
+                "sizes":sizes,"contacts":contacts_}
     def recreate_from_file(self,env):
         #=load in a file and recreate the objects where they should be
         self.reset()
