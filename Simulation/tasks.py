@@ -12,7 +12,7 @@ Task 4: Sort into actual size order <<
 
 Task 5: place the ball on top of the box <<
 
-Task 6: Sort the missing pieces
+Task 6: Sort the missing pieces <
 
 Task 7: Put the sizes in the right piles
 
@@ -577,12 +577,10 @@ class task6(task):
             id_tracker_y[coord[1]] = id_tracker_y.get(coord[1], [])
             id_tracker_y[coord[1]].append(i)
         to_pickup=[]
-        print(count_coords_x,count_coords_y)
         for key in count_coords_x: #find the target ones
             if count_coords_x[key]<=1:
                 for key2 in count_coords_y:
                     if count_coords_y[key2]<=1:
-                        print("===============",id_tracker_x[key],id_tracker_y[key2])
                         to_pickup.append(id_tracker_x[key][0])
         #reform the grid without the blocks
         original_indices = np.arange(len(objects))
@@ -599,7 +597,7 @@ class task6(task):
         disty = round((ymax - ymin) / (size - 1), 4)
         dist=max(distx,disty)
         c=0
-        print(to_pickup)
+        grid=np.zeros((size,size))-1
         for x in range(size): #loop through potential grid
             for y in range(size):
                 current_x=xmin+dist*x #calculate estimated positions
@@ -612,18 +610,37 @@ class task6(task):
                     overlap = np.intersect1d(relatedx, relatedy)
                     if len(overlap) > 0:
                         # cell occupied
-                        pass
+                        visual_data = p.getVisualShapeData(env.block_ids[c])
+                        colour=visual_data[0][7][:-1]
+                        grid[x][y]=np.argmax(colour)
                     else:
                         # cell empty → target
-                        targets.append([current_x, current_y, 0.1, c])
+                        targets.append([current_x, current_y, 0.1, c, x, y])
 
                 c+=1
-        print(targets)
+        y, x = np.where(grid == -1) #get the targets
+        #fill in the missing colours
+        #check the index and colour its meant to be
+        new_targets=[]
+        ids=[]
+        for yi, xi in zip(y, x):
+            col = grid[:, xi]
+            vals, counts = np.unique(col[col != -1], return_counts=True)
+            correct_value = vals[np.argmax(counts)]  # mode of the column
+            
+            grid[yi, xi] = correct_value
+            colour=np.array([0,0,0,1])
+            colour[int(correct_value)]=1
+            for i in range(len(targets)):
+                if targets[i][4]==yi and targets[i][5]==xi: #put in corret order
+                    new_targets.append(targets[i])
+                    id_=targets[i][3]
+                    cube_pos, _ = p.getBasePositionAndOrientation(env.block_ids[id_]) #find id
+                    ids.append(cube_pos)
+        print("\nCompleted grid:\n", grid)
         for i in range(len(targets)): #place the target from the og position to the target
-            temp_loc=list(targets[i][0:-1])
-            id_=targets[i][-1]
-            cube_pos, _ = p.getBasePositionAndOrientation(env.block_ids[id_]) #find id
-            cube_pos=list(cube_pos)
+            temp_loc=list(new_targets[i][0:3])
+            cube_pos=list(ids[i])
             cube_pos[2]+=0.08
             env.move_gripper_to(cube_pos) #move to just above it
             env.step(10)
@@ -639,7 +656,6 @@ class task6(task):
             env.put_block() #release
             env.move_gripper_to(cube_pos)
         #place correct colour in spaces 
-        env.step(10000)
     def get_correctness(self,obs):
         #should be in correct order
         #distance from target one plus distance to target 2 divided by 2 and normalised (over total distances)
