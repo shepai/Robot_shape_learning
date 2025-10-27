@@ -521,23 +521,135 @@ class task6(task):
     Fill in the missing pieces
     """
     def generate(self, env):
-        pass 
+        grid_start=np.array([0.3,-0.3,0.1])+np.random.normal(0,0.01,(3,))
+        remove=[np.random.randint(0,9) for i in range(np.random.randint(1,3))]
+
+        c=0
+        colours=[[1,0,0,1],[0,1,0,1],[0,0,1,1]]
+        ind1=np.random.randint(0,3)
+        ind2=np.random.randint(0,3)
+        self.targets=[]
+        self.blocks=[]
+        self.id=[]
+        for i in range(4):
+            for j in range(4):
+                shift=grid_start.copy() 
+                shift[0]+=0.1*i
+                shift[1]-=0.1*j
+                colour = colours[ind1] if c%2==0 else colours[ind2]
+                if c not in remove:
+                    env.generate_block(shift,deepcopy(colour))
+                else: 
+                    coords=[np.random.uniform(low=0.4, high=0.6), np.random.uniform(low=0.0, high=0.6), 0.05]
+                    env.generate_block(coords,deepcopy(colour))
+                    self.targets.append(shift)
+                    self.blocks.append(coords)
+                    self.id.append(c)
+                c+=1 
+                #grid[i][j]=shift.copy()
+        
+        
         #make lines of the same colour with missing slots, and then the missing pieces in another pile
 
     def solve(self,env,p):
+        def find_nearest(d, value, tol=0.01):
+            # find key in dict d closest to value within tolerance tol
+            keys = np.array(list(d.keys()))
+            diff = np.abs(keys - value)
+            if len(diff) == 0 or np.min(diff) > tol:
+                return None
+            return keys[np.argmin(diff)]
         #calculate the mising spots and which colour it is
-        #pick up each block not in the main pile, then place in missing slot
-        pass
+        objects=[]
+        count_coords_x={}
+        count_coords_y={}
+        id_tracker_x={}
+        id_tracker_y={}
+        for i in range(len(env.block_ids)): #loop through and work out what is in the grid and what is not
+            cube_pos, _ = p.getBasePositionAndOrientation(env.block_ids[i]) #find id
+            #cube_pos=[round(cube_pos[0],4),round(cube_pos[1],4),round(cube_pos[2],4)]
+            objects.append(cube_pos)
+            coord = (round(cube_pos[0],4), round(cube_pos[1],4))
+            count_coords_x[coord[0]] = count_coords_x.get(coord[0], 0) + 1
+            count_coords_y[coord[1]] = count_coords_y.get(coord[1], 0) + 1
+            id_tracker_x[coord[0]] = id_tracker_x.get(coord[0], [])
+            id_tracker_x[coord[0]].append(i)
+            id_tracker_y[coord[1]] = id_tracker_y.get(coord[1], [])
+            id_tracker_y[coord[1]].append(i)
+        to_pickup=[]
+        print(count_coords_x,count_coords_y)
+        for key in count_coords_x: #find the target ones
+            if count_coords_x[key]<=1:
+                for key2 in count_coords_y:
+                    if count_coords_y[key2]<=1:
+                        print("===============",id_tracker_x[key],id_tracker_y[key2])
+                        to_pickup.append(id_tracker_x[key][0])
+        #reform the grid without the blocks
+        original_indices = np.arange(len(objects))
+        ids=np.unique(np.array(to_pickup))
+        size=int(np.sqrt(len(objects)))
+        mask = np.ones(len(objects), dtype=bool)
+        mask[ids] = False
+        objects = np.array(objects)[mask]
+        original_indices = original_indices[mask]
+        xmin, xmax = np.min(objects[:,0]), np.max(objects[:,0])
+        ymin, ymax = np.min(objects[:,1]), np.max(objects[:,1])
+        targets=[]
+        distx = round((xmax - xmin) / (size - 1), 4)
+        disty = round((ymax - ymin) / (size - 1), 4)
+        dist=max(distx,disty)
+        c=0
+        print(to_pickup)
+        for x in range(size): #loop through potential grid
+            for y in range(size):
+                current_x=xmin+dist*x #calculate estimated positions
+                current_y=ymax-dist*y
+                x_key = find_nearest(id_tracker_x, round(current_x,4)) #look to see if it is in the grid
+                y_key = find_nearest(id_tracker_y, round(current_y,4))
+                relatedx=id_tracker_x.get(x_key)
+                relatedy=id_tracker_y.get(y_key)
+                if type(relatedx)!=type(None) and type(relatedy)!=type(None):
+                    overlap = np.intersect1d(relatedx, relatedy)
+                    if len(overlap) > 0:
+                        # cell occupied
+                        pass
+                    else:
+                        # cell empty → target
+                        targets.append([current_x, current_y, 0.1, c])
+
+                c+=1
+        print(targets)
+        for i in range(len(targets)): #place the target from the og position to the target
+            temp_loc=list(targets[i][0:-1])
+            id_=targets[i][-1]
+            cube_pos, _ = p.getBasePositionAndOrientation(env.block_ids[id_]) #find id
+            cube_pos=list(cube_pos)
+            cube_pos[2]+=0.08
+            env.move_gripper_to(cube_pos) #move to just above it
+            env.step(10)
+            env.pick_block(env.block_ids[id_]) #pick up
+            cube_pos[2]+=0.38
+            env.move_gripper_to(cube_pos) #move up to avoid hitting into things
+            env.step(10)
+            cube_pos[0:2]=temp_loc[0:2]
+            env.move_gripper_to(cube_pos) #move up to avoid hitting into things
+            env.step(10)
+            env.move_gripper_to(temp_loc) #move to the target
+            env.step(15) #small delay
+            env.put_block() #release
+            env.move_gripper_to(cube_pos)
+        #place correct colour in spaces 
+        env.step(10000)
     def get_correctness(self,obs):
         #should be in correct order
-        #TODO  
+        #distance from target one plus distance to target 2 divided by 2 and normalised (over total distances)
         pass
 
 
 if __name__=="__main__":
     from environment import *
     env=Env(realtime=1,speed=4.5)
-    task=task2()
+    task=task6()
     task.generate(env)
     #env.record("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Videos/task5.mp4")
     print("Correctness value:",task.get_correctness(env.get_observation()))
@@ -550,6 +662,6 @@ if __name__=="__main__":
     del env 
     del task 
     env=Env(realtime=0)
-    task=task2()
+    task=task6()
     task.load_details("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Data/example.pkl",env)
     task.solve(env,p)
