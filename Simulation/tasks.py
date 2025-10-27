@@ -400,7 +400,9 @@ class task5(task):
     """
     def generate(self, env):
         colour=[np.random.randint(0,254)/255,np.random.randint(0,254)/255,np.random.randint(0,254)/255,1]
-        env.generate_block([np.random.random(),np.random.random(),np.random.random()],colour,1,"sphere_small.urdf")
+        x_bounds=min(0.4,max(0.7,np.random.random()))
+        y_bounds=min(0.4,max(0.7,np.random.random()))
+        env.generate_block([x_bounds,y_bounds,0.1],colour,1,"sphere_small.urdf")
         env.makeFlat([0.5,-0.5,0.2],colour,length = 0.6,width  = 0.6,height = 0.1,base=0)
         env.step(100)
     def solve(self,env,p):
@@ -442,6 +444,7 @@ class task6(task):
     def generate(self, env):
         pass 
         #make lines of the same colour with missing slots, and then the missing pieces in another pile
+
     def solve(self,env,p):
         #calculate the mising spots and which colour it is
         #pick up each block not in the main pile, then place in missing slot
