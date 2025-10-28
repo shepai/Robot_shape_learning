@@ -27,6 +27,16 @@ There are various tasks within the simulation such as building towers, organsing
       <b>Challenge 4</b>
     </td>
   </tr>
+  <tr>
+    <td align="center">
+      <img src="Assets/Gifs/task5_fast.gif" width="250"><br>
+      <b>Challenge 5</b>
+    </td>
+    <td align="center">
+      <img src="Assets/Gifs/task6_fast.gif" width="250"><br>
+      <b>Challenge 6</b>
+    </td>
+  </tr>
 </table>
 
 ## Parent model 
