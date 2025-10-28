@@ -623,6 +623,7 @@ class task6(task):
         #check the index and colour its meant to be
         new_targets=[]
         ids=[]
+        print(targets)
         for yi, xi in zip(y, x):
             col = grid[:, xi]
             vals, counts = np.unique(col[col != -1], return_counts=True)
@@ -633,18 +634,17 @@ class task6(task):
             colour[int(correct_value)]=1
             for i in range(len(targets)):
                 if targets[i][4]==yi and targets[i][5]==xi: #put in corret order
-                    new_targets.append(targets[i])
+                    new_targets.append(targets[i].copy())
                     id_=targets[i][3]
                     cube_pos, _ = p.getBasePositionAndOrientation(env.block_ids[id_]) #find id
                     ids.append(cube_pos)
-        print("\nCompleted grid:\n", grid)
         for i in range(len(targets)): #place the target from the og position to the target
             temp_loc=list(new_targets[i][0:3])
             cube_pos=list(ids[i])
             cube_pos[2]+=0.08
             env.move_gripper_to(cube_pos) #move to just above it
             env.step(10)
-            env.pick_block(env.block_ids[id_]) #pick up
+            env.pick_block(env.block_ids[new_targets[i][3]]) #pick up
             cube_pos[2]+=0.38
             env.move_gripper_to(cube_pos) #move up to avoid hitting into things
             env.step(10)
@@ -664,20 +664,20 @@ class task6(task):
 
 if __name__=="__main__":
     from environment import *
-    env=Env(realtime=1,speed=4.5)
-    task=task6()
+    env=Env(realtime=1)
+    task=task5()
     task.generate(env)
-    #env.record("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Videos/task5.mp4")
+    env.record("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Videos/task5.mp4")
     print("Correctness value:",task.get_correctness(env.get_observation()))
     task.solve(env,p)
     print("Correctness value:",task.get_correctness(env.get_observation()))
-    #env.stop_record() 
+    env.stop_record() 
     task.save_details("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Data/example.pkl",env)
     #test save
     env.close()
     del env 
     del task 
     env=Env(realtime=0)
-    task=task6()
+    task=task5()
     task.load_details("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Data/example.pkl",env)
     task.solve(env,p)
