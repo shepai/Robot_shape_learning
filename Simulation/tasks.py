@@ -12,9 +12,9 @@ Task 4: Sort into actual size order <<
 
 Task 5: place the ball on top of the box <<
 
-Task 6: Sort the missing pieces <
+Task 6: Sort the missing pieces <<
 
-Task 7: Put the sizes in the right piles
+Task 7: Put the sizes in the right piles <<
 
 Task 8: Sort size in one axis and colour in the other
 
@@ -623,7 +623,6 @@ class task6(task):
         #check the index and colour its meant to be
         new_targets=[]
         ids=[]
-        print(targets)
         for yi, xi in zip(y, x):
             col = grid[:, xi]
             vals, counts = np.unique(col[col != -1], return_counts=True)
@@ -639,6 +638,7 @@ class task6(task):
                     cube_pos, _ = p.getBasePositionAndOrientation(env.block_ids[id_]) #find id
                     ids.append(cube_pos)
         for i in range(len(targets)): #place the target from the og position to the target
+            #print("Correctness value:",self.get_correctness(env.get_observation()))
             temp_loc=list(new_targets[i][0:3])
             cube_pos=list(ids[i])
             cube_pos[2]+=0.08
@@ -659,25 +659,147 @@ class task6(task):
     def get_correctness(self,obs):
         #should be in correct order
         #distance from target one plus distance to target 2 divided by 2 and normalised (over total distances)
+        dist1=0
+        for i in range(len(self.targets)):
+            a=np.array(self.targets[i][0:2])
+            b=np.array(self.blocks[i][0:2])
+            total=np.linalg.norm(a-b)
+            current=np.array(obs['blocks'][self.id[i]][0:2])
+            dist2=np.linalg.norm(a-current)
+            if dist2>total: dist1+=0
+            else: dist1+=(1-(dist2/total))/len(self.targets)
+        return dist1
+
+class task7(task):
+    """
+    Make a tower with all the blocks (size particular order)
+    """
+    def generate(self,env):
+        """
+        Generate blocks in random places
+        """
+        sizes=[np.random.random() for i in range(3)]
+        amount=np.random.randint(5,15)
+        blocks=[]
+        colour=[np.random.random(),np.random.random(),np.random.random(),1]
+        min_dist = 0.15
+        for i in range(amount):
+            not_allowed=True 
+            t1=time.time()
+            t2=time.time()
+            while not_allowed and t2-t1<2:
+                t2=time.time()
+                position = np.array([np.random.uniform(low=0.4, high=0.6), np.random.uniform(low=0.0, high=0.6), 0.05])
+                # Check distances from all existing blocks
+                if len(blocks) == 0:
+                    blocks.append(position)
+                    break
+                distances = [np.linalg.norm(position[:2] - b[:2]) for b in np.array(blocks)]
+                if all(d > min_dist for d in distances):
+                    not_allowed=False
+            if t2-t1<2:
+                blocks.append(position)
+                env.generate_block(position,colour,size=sizes[np.random.randint(0,3)])
+            else:
+                break
+        env.step(100)
+    def solve(self,env,p):
+        point=np.array([np.random.uniform(low=0.4, high=0.5), np.random.uniform(low=-0.6, high=0.0), 0.10])
+        targets=[]
+        heights=[0,0,0]
+        for i in range(3):
+            targets.append(deepcopy(point))
+            targets[i][0]+= 0.2 * i
+        targetidx=-1
+        id_=0
+        category={}
+        for i in range(len(env.block_ids)):
+            #print("Correctness value:",self.get_correctness(env.get_observation()))
+            visual_data = p.getVisualShapeData(env.block_ids[i])
+            size=env.sizes[i]
+            if category.get(size,-1) ==-1:
+                category[size]=id_
+                id_+=1
+            targetidx=category[size]
+            target_pos=deepcopy(targets[targetidx])
+            target_pos[2]+=heights[targetidx]
+            cube_pos, _ = p.getBasePositionAndOrientation(env.block_ids[i]) #find id
+            cube_pos=list(cube_pos)
+            cube_pos[2]+=0.08
+            env.move_gripper_to(cube_pos) #move to just above it
+            env.step(10)
+            env.pick_block(env.block_ids[i]) #pick up
+            cube_pos[2]+=0.38
+            env.move_gripper_to(cube_pos) #move up to avoid hitting into things
+            env.step(10)
+            cube_pos[0:2]=target_pos[0:2]
+            env.move_gripper_to(cube_pos) #move up to avoid hitting into things
+            env.step(10)
+            env.move_gripper_to(target_pos) #move to the target
+            env.step(15) #small delay
+            env.put_block() #release
+            env.move_gripper_to(cube_pos)
+            #target_pos[2]+=0.05
+            heights[targetidx]+=0.05
+
+    def get_correctness(self,obs):
+        from sklearn.cluster import KMeans
+        from sklearn.metrics import adjusted_rand_score
+        #find the average groupings
+        positions=obs['blocks']
+        colours=obs['sizes']
+ 
+        positions = np.array(positions)
+        colours = np.array(colours, dtype=float)
+        num_colours,colour_labels=np.unique(colours, axis=0, return_inverse=True)
+
+        n_clusters=len(num_colours)
+        if colours.max() > 1:  # normalize colour range
+            colours /= 255.0
+
+        kmeans = KMeans(n_clusters=n_clusters, n_init='auto').fit(positions)
+        spatial_labels = kmeans.labels_
+        centers = kmeans.cluster_centers_
+        dists = np.linalg.norm(positions - centers[spatial_labels], axis=1)
+        spatial_score = 1 - np.clip(np.mean(dists) / (np.max(dists) + 1e-9), 0, 1)
+        alignment_score = adjusted_rand_score(colour_labels, spatial_labels)
+        final_score = 0.6 * spatial_score + 0.4 * alignment_score
+        return float(final_score)
+    
+class task8(task):
+    """
+    sort by size and colour in two axis
+    """
+    def generate(self):
+        #generate random positions (maybe mroegrid like) with various sizes and colours
+        pass 
+    def solve(self,env,p):
+        #sort into size order
+        #sort into colour order
+        #merge the orders in terms of x and y
+        #pick and place
+        pass 
+    def get_correctness(self,obs):
+        #how in order the x is
+        #how in order the y is 
+        #add both and devide by two
         pass
-
-
 if __name__=="__main__":
     from environment import *
-    env=Env(realtime=1)
-    task=task5()
+    env=Env(realtime=0)
+    task=task7()
     task.generate(env)
-    env.record("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Videos/task5.mp4")
+    #env.record("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Videos/task7_fast.mp4")
     print("Correctness value:",task.get_correctness(env.get_observation()))
     task.solve(env,p)
     print("Correctness value:",task.get_correctness(env.get_observation()))
-    env.stop_record() 
+    #env.stop_record() 
     task.save_details("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Data/example.pkl",env)
     #test save
     env.close()
     del env 
     del task 
     env=Env(realtime=0)
-    task=task5()
+    task=task7()
     task.load_details("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Data/example.pkl",env)
     task.solve(env,p)
