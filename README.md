@@ -29,7 +29,7 @@ There are various tasks within the simulation such as building towers, organsing
   </tr>
   <tr>
     <td align="center">
-      <img src="Assets/Gifs/task5_fast.gif" width="250"><br>
+      <img src="Assets/Gifs/task5.gif" width="250"><br>
       <b>Challenge 5</b>
     </td>
     <td align="center">
