@@ -97,7 +97,7 @@ We can then load the positions using:
 ```python
 env=Env(realtime=0)
 task=task2() #example task
-task.load_details("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Data/example.pkl",env)
+task.load_details("file/path/starting_state.pkl",env)
 task.solve(env,p)
 ```
 
