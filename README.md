@@ -84,7 +84,7 @@ We use these tasks to make a dataset that shows the task in the start and end. T
 
 ```python
 env=Env(realtime=0)
-task=task7()
+task=task2() #example task 
 task.generate(env)
 task.save_details("file/path/starting_state.pkl",env) #this 
 task.solve(env,p)
@@ -92,7 +92,14 @@ task.save_details("file/path/end_state.pkl",env) #this
 env.close()
 ```
 
-We can then load the positions
+We can then load the positions using:
+
+```python
+env=Env(realtime=0)
+task=task2() #example task
+task.load_details("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Data/example.pkl",env)
+task.solve(env,p)
+```
 
 
 ## Dependiencies 
