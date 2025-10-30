@@ -770,36 +770,104 @@ class task8(task):
     """
     sort by size and colour in two axis
     """
-    def generate(self):
+    def generate(self,env):
         #generate random positions (maybe mroegrid like) with various sizes and colours
-        pass 
+        m=np.random.randint(2,4)
+        n=np.random.randint(2,4)
+        position = np.array([np.random.uniform(low=0.35, high=0.5), np.random.uniform(low=0.0, high=0.6), 0.05])
+        rgba=[0,0,0,1]
+        channel=np.random.randint(0,3)
+        offset=0.2
+        for i in range(n):
+            for j in range(m):
+                temp=position.copy()
+                temp[0]+=i/15 + np.random.uniform(low=-0.05,high=0.05) + offset
+                temp[1]+=j/15 + np.random.uniform(low=-0.05,high=0.05) + offset
+                size=np.random.uniform(low=0.3,high=1.5)
+                shade=np.random.random()
+                rgba[channel]=shade
+                env.generate_block(temp,deepcopy(rgba),size=size) 
     def solve(self,env,p):
+        sizes_idx=[]
+        colour_idx=[]
+        sizes=[]
+        shades=[]
         #sort into size order
-        #sort into colour order
-        #merge the orders in terms of x and y
+        for i in range(len(env.block_ids)):
+            aabb_min, aabb_max = p.getAABB(env.block_ids[i])
+            size = [aabb_max[i] - aabb_min[i] for i in range(3)][0] #enforce the first index as its a cube
+
+            visual_data = p.getVisualShapeData(env.block_ids[i])
+            colour=visual_data[0][7]
+            grey_intensity=0.299*colour[0]+0.587*colour[1]+0.114*colour[2]
+            placed=False 
+            c=0
+            while not placed and c<len(shades): #sort into colour order
+                if grey_intensity<shades[c]:
+                    shades.insert(c,grey_intensity)
+                    colour_idx.insert(c,i)
+                    placed=True
+                c+=1
+            if not placed:
+                shades.append(grey_intensity)
+                colour_idx.append(i)
+            placed=False 
+            c=0
+            while not placed and c<len(sizes): ##sort into size
+                if size<sizes[c]:
+                    sizes.insert(c,size)
+                    sizes_idx.insert(c,i)
+                    placed=True
+                c+=1
+            if not placed:
+                sizes.append(grey_intensity)
+                sizes_idx.append(i)
+        for i in range(len(env.block_ids)):#merge the orders in terms of x and y
+            order_x=sizes_idx.index(i)/10 + 0.4 #start pos
+            order_y=colour_idx.index(i)/10*-1
+            print(order_x,order_y)
+            target_pos=[order_x,order_y,0.05]
+            cube_pos, _ = p.getBasePositionAndOrientation(env.block_ids[i]) #find id
+            cube_pos=list(cube_pos)
+            cube_pos[2]+=0.08
+            env.move_gripper_to(cube_pos) #move to just above it
+            env.step(10)
+            env.pick_block(env.block_ids[i]) #pick up
+            cube_pos[2]+=0.38
+            env.move_gripper_to(cube_pos) #move up to avoid hitting into things
+            env.step(10)
+            cube_pos[0:2]=target_pos[0:2]
+            env.move_gripper_to(cube_pos) #move up to avoid hitting into things
+            env.step(10)
+            env.move_gripper_to(target_pos) #move to the target
+            env.step(15) #small delay
+            env.put_block() #release
+            env.move_gripper_to(cube_pos)
         #pick and place
-        pass 
+        env.step(10000)
     def get_correctness(self,obs):
         #how in order the x is
         #how in order the y is 
         #add both and devide by two
         pass
+
 if __name__=="__main__":
     from environment import *
-    env=Env(realtime=0)
-    task=task7()
+    env=Env(realtime=0,speed=4)
+    task=task8()
     task.generate(env)
     #env.record("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Videos/task7_fast.mp4")
+    task.save_details("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Data/example.pkl",env)
     print("Correctness value:",task.get_correctness(env.get_observation()))
     task.solve(env,p)
     print("Correctness value:",task.get_correctness(env.get_observation()))
     #env.stop_record() 
-    task.save_details("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Data/example.pkl",env)
+    
     #test save
     env.close()
     del env 
     del task 
     env=Env(realtime=0)
-    task=task7()
+    task=task8()
     task.load_details("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Data/example.pkl",env)
     task.solve(env,p)
