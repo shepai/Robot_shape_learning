@@ -13,6 +13,9 @@ class Env:
         self.speed=speed
     def step(self, steps=240):
         for _ in range(steps):
+            for i in range(len(self.block_ids)):
+                cube_pos, _ = p.getBasePositionAndOrientation(self.block_ids[i]) #find id
+                self.positions[i]=cube_pos
             p.stepSimulation()
             if self.realtime:
                 time.sleep(p.getPhysicsEngineParameters()['fixedTimeStep']/self.speed)
