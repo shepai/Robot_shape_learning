@@ -92,7 +92,7 @@ class Env:
         self.fingertip=fingertip_coords.copy()
         
         orn = p.getQuaternionFromEuler(euler)
-        joint_angles = p.calculateInverseKinematics(self.robot_id, self.ee_index, fingertip_coords, orn,maxNumIterations=200,
+        joint_angles = p.calculateInverseKinematics(self.robot_id, self.ee_index, fingertip_coords, orn,maxNumIterations=300,
     residualThreshold=1e-6)
         for i in self.arm_joints:
             p.setJointMotorControl2(self.robot_id, i, p.POSITION_CONTROL, joint_angles[i], force=300, maxVelocity=vel)

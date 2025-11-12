@@ -18,9 +18,9 @@ Task 7: Put the sizes in the right piles <<
 
 Task 8: Sort size in one axis and colour in the other <
 
-Task 9: Look for the lowest colour and remove it from the pile
+Task 9: Look for the lowest colour and remove it from the pile <<
 
-Task 10: Place the four blocks given into a square 
+Task 10: Place the four blocks given into a square  << 
 
 Task 11: avoid flat surface to pick up objects underneth it and place them on top
 
@@ -901,12 +901,78 @@ class task9(task):
         return max(touching*0.5 + (1-distance)*0.5,0)
     
 class task10(task):
+    """
+    Four random blocks are given... 
+    """
     def generate(self,env):
-        pass 
+        for i in range(4):
+            point=np.array([np.random.uniform(low=0.4, high=0.5), np.random.uniform(low=0.0, high=0.6), 0.10])
+            rgba=[np.random.random(),np.random.random(),np.random.random(),1]
+            env.generate_block(deepcopy(point),deepcopy(rgba),size=1) 
     def solve(self,env,p):
-        pass
+        #pick a point and start to place the blocks in a square
+        point=np.array([np.random.uniform(low=0.3, high=0.4), np.random.uniform(low=-0.4, high=-0.2), 0.10])
+        length=np.random.uniform(low=0.1,high=0.2)
+        points=[deepcopy(point),deepcopy(point),deepcopy(point),deepcopy(point)]
+        points[1][0]+=length
+        points[2][0]+=length
+        points[2][1]-=length
+        points[3][1]-=length
+        for i in range(len(env.block_ids)):#merge the orders in terms of x and y
+            target_pos=points[i]
+            cube_pos, _ = p.getBasePositionAndOrientation(env.block_ids[i]) #find id
+            cube_pos=list(cube_pos)
+            cube_pos[2]+=0.08
+            env.move_gripper_to(cube_pos) #move to just above it
+            env.step(10)
+            env.pick_block(env.block_ids[i]) #pick up
+            cube_pos[2]+=0.38
+            env.move_gripper_to(cube_pos) #move up to avoid hitting into things
+            env.step(10)
+            cube_pos[0:2]=target_pos[0:2]
+            env.move_gripper_to(cube_pos) #move up to avoid hitting into things
+            env.step(10)
+            env.move_gripper_to(target_pos) #move to the target
+            env.step(15) #small delay
+            env.put_block() #release
+            env.move_gripper_to(cube_pos)
     def get_correctness(self,obs):
-        pass
+        #compoute centroid ppint 
+        #compute deviations from 90 degrees 
+        points=[]
+        for i in range(len(obs["blocks"])):
+            points.append(obs["blocks"][i][0:2])
+        points=np.array(points)
+        c = points.mean(axis=0)
+        ang = np.arctan2(points[:,1]-c[1], points[:,0]-c[0])
+        order = np.argsort(ang)
+        alpha=0.6
+        beta=0.4
+        p = points[order]
+        # close the loop
+        p_loop = np.vstack([p, p[0]])
+        sides = np.linalg.norm(p_loop[1:] - p_loop[:-1], axis=1)  # 4 sides
+        # angles at each vertex between vectors (prev->curr) and (curr->next)
+        angles = []
+        for i in range(4):
+            a = p[i] - p[i-1]    # prev->curr  (wraps automatically using negative index)
+            b = p[(i+1)%4] - p[i]# curr->next
+            # angle between a and b
+            cosang = np.dot(a,b) / (np.linalg.norm(a)*np.linalg.norm(b))
+            cosang = np.clip(cosang, -1, 1)
+            ang_deg = np.degrees(np.arccos(cosang))
+            angles.append(ang_deg)
+        angles=np.array(angles)
+        mean_s = sides.mean()
+        if mean_s == 0:
+            return 0.0
+        rel_side_cv = sides.std() / mean_s  # 0 for equal sides, larger = worse
+        mean_abs_angle_dev = np.mean(np.abs(angles - 90.0)) / 90.0  # normalized [0,1+]
+        # combine (clamp to [0,1])
+        combined_err = alpha * rel_side_cv + beta * mean_abs_angle_dev
+        # map to score: 1 for zero error, 0 for large error. Use a smooth clamp.
+        score = 1.0 - combined_err
+        return float(max(0.0, min(1.0, score)))
 
 class taskX(task):
     def generate(self,env):
@@ -917,8 +983,8 @@ class taskX(task):
         pass
 if __name__=="__main__":
     from environment import *
-    env=Env(realtime=1,speed=2)
-    task=task9()
+    env=Env(realtime=1,speed=8)
+    task=task10()
     task.generate(env)
     #env.record("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Videos/task9.mp4")
     task.save_details("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Data/example.pkl",env)
@@ -932,6 +998,6 @@ if __name__=="__main__":
     del env 
     del task 
     env=Env(realtime=0)
-    task=task9()
+    task=task10()
     task.load_details("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Data/example.pkl",env)
     task.solve(env,p)
