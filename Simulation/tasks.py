@@ -16,7 +16,7 @@ Task 6: Sort the missing pieces <<
 
 Task 7: Put the sizes in the right piles <<
 
-Task 8: Sort size in one axis and colour in the other
+Task 8: Sort size in one axis and colour in the other <
 
 Task 9: Look for the lowest colour and remove it from the pile
 
@@ -851,12 +851,76 @@ class task8(task):
         #add both and devide by two
         pass
 
+class task9(task):
+    """
+    find lowest colour and pick it up
+    """
+    def generate(self,env):
+        point=np.array([np.random.uniform(low=0.4, high=0.5), np.random.uniform(low=-0.6, high=0.0), 0.10])
+        rgba=[0,0,0,1]
+        channel=np.random.randint(0,3)
+        offset=0.07
+        axis=np.random.randint(0,2)
+        for i in range(np.random.randint(3,5)):
+            rgba[channel]=np.random.random()
+            point[axis]+=offset
+            env.generate_block(deepcopy(point),deepcopy(rgba),size=1) 
+    def solve(self,env,p):
+        highest_idx=0
+        highest=0
+        for i in range(len(env.block_ids)):
+            visual_data = p.getVisualShapeData(env.block_ids[i])
+            colour=visual_data[0][7]
+            if max(colour[0:3])>highest: #if the maximum channel is less than current lowest
+                highest=max(colour[0:3])
+                highest_idx=i
+        cube_pos, _ = p.getBasePositionAndOrientation(env.block_ids[highest_idx]) #find id
+        cube_pos=list(cube_pos)
+        cube_pos[2]+=0.08
+        env.move_gripper_to(cube_pos) #move to just above it
+        env.step(10)
+        env.pick_block(env.block_ids[highest_idx]) #pick up
+        cube_pos[2]+=1
+        env.move_gripper_to(cube_pos) #move up to avoid hitting into things
+        env.step(10)
+    def get_correctness(self,obs):
+        #should be made up of two aspects
+        #if it is touching the block, and how close it is to the right block
+        brightest=0
+        idx=0
+        for i in range(len(obs['block_colours'])):
+            colour=obs['block_colours'][i]
+            if max(colour[0:3])>brightest:
+                brightest=max(colour[0:3])
+                idx=i 
+        block_pos = np.array(obs['blocks'][idx])
+        ee_pos = np.array(obs['robot_end_position'])
+        distance = np.linalg.norm(block_pos - ee_pos)
+        touching=0
+        if obs["holding"] is not None and obs["holding"]==idx: touching=1
+        return max(touching*0.5 + (1-distance)*0.5,0)
+    
+class task10(task):
+    def generate(self,env):
+        pass 
+    def solve(self,env,p):
+        pass
+    def get_correctness(self,obs):
+        pass
+
+class taskX(task):
+    def generate(self,env):
+        pass 
+    def solve(self,env,p):
+        pass
+    def get_correctness(self,obs):
+        pass
 if __name__=="__main__":
     from environment import *
-    env=Env(realtime=0,speed=4)
-    task=task8()
+    env=Env(realtime=1,speed=2)
+    task=task9()
     task.generate(env)
-    #env.record("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Videos/task7_fast.mp4")
+    #env.record("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Videos/task9.mp4")
     task.save_details("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Data/example.pkl",env)
     print("Correctness value:",task.get_correctness(env.get_observation()))
     task.solve(env,p)
@@ -868,6 +932,6 @@ if __name__=="__main__":
     del env 
     del task 
     env=Env(realtime=0)
-    task=task8()
+    task=task9()
     task.load_details("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Data/example.pkl",env)
     task.solve(env,p)

@@ -130,6 +130,16 @@ class Env:
         names=[]
         sizes=[]
         contacts_=[]
+        if self.holding_constraint is not None:
+            try:
+                info = p.getConstraintInfo(self.holding_constraint)
+                # If it doesn’t raise an error, the constraint still exists
+                holding = self.block_ids.index(info[2])
+            except p.error:
+                # The constraint no longer exists (object released or removed)
+                holding = None
+        else:
+            holding = None
         for i in range(len(self.block_ids)):
             cube_pos, _ = p.getBasePositionAndOrientation(self.block_ids[i])
             blocks.append(cube_pos)
@@ -148,7 +158,7 @@ class Env:
         robot_coords=p.getLinkState(self.robot_id, linkIndex=self.ee_index)[0]
         return {"blocks":blocks,"block_colours":colours,"robot_end_position":robot_coords,
                 "holding_constraint":self.holding_constraint,"block_name":names,
-                "sizes":sizes,"contacts":contacts_}
+                "sizes":sizes,"contacts":contacts_,"holding":holding}
     def recreate_from_file(self,env):
         #=load in a file and recreate the objects where they should be
         self.reset()
