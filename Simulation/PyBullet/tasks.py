@@ -22,9 +22,12 @@ Task 9: Look for the lowest colour and remove it from the pile <<
 
 Task 10: Place the four blocks given into a square  << 
 
-Task 11: avoid flat surface to pick up objects underneth it and place them on top
+Task 11: Push on opposite side of bloc kresting on cylender, and it should be up in the air
 
-Task 12: Push on opposite side of bloc kresting on cylender, and it should be up in the air
+Further ideas too lazy to do right now 
+
+Task: avoid flat surface to pick up objects underneth it and place them on top
+
 """
 
 from copy import deepcopy 
