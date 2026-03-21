@@ -46,3 +46,5 @@ if __name__=="__main__":
     dec_model.set_task("You are given two blocks and you need to stack them on top of eachother")
     reply=dec_model.chat("Block 1 at (0,0.3,0), block 2 at (0.2,0.3,0)")
     print(reply)
+
+    
