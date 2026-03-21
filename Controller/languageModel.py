@@ -3,11 +3,11 @@ from ollama import chat
 import requests
 import sys 
 class Decisions:
-    def __init__(self,model="llama3"):
+    def __init__(self,model="gemma3"):
         self.MODEL=model
         self.history = []
         self.system_prompt = [
-            "You are a robot arm which can pick up objects with its tractor beam on the hand. You just need to hover over the z with an offset of 0.15 where the coordinates are in the form (x,y,z)",
+            "You are a robot arm which can pick up objects with its tractor beam on the hand. You just need to hover the gripper over the z with an offset of 0.15 where the coordinates are in the form (x,y,z) otherwise you crush the object",
             "Your only actions you can do are move_gripper_to(target_coord) to move the gripper hand to a specific coordinate, pick_block(index) to pick up a specific block, put_block() to drop whatever is held. Given a task generate the steps to solving it using only these listed commands",
             " "
         ]
