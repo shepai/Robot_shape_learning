@@ -32,7 +32,7 @@ class Decisions:
         """for user, ai in self.history:
             messages += f"User input: {user}\nAI: {ai}\n" """
 
-        messages += f"User input: {reading}\nAI: "
+        messages += f"Current environment: {reading}\n "
 
         try:
             response = requests.post(
