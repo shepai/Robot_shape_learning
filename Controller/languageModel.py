@@ -16,23 +16,21 @@ class Decisions:
 3. **Placing**: To place the block, use `put_block()`.
 
 4. **Task Generation**: For any given task, generate a sequence of commands to solve it. You are **only allowed** to use the three commands above (no explanations or other actions).
-
+"""," ",
+"""
 **Format**: 
 - Use the exact syntax of the commands.
 - If parameters are involved, make sure to list them correctly.
 - Your response should consist of only the generated commands in the following format:
     - `pick_block(index)`
     - `move_gripper_to(x, y, z)`
-    - `put_block()`""",
-            " "
+    - `put_block()`"""
         ]
     def chat(self,reading):
-        for i in range(len(self.system_prompt)):
+        for i in range(len(self.system_prompt)-1):
             messages = self.system_prompt[i]+"\n"
-        """for user, ai in self.history:
-            messages += f"User input: {user}\nAI: {ai}\n" """
 
-        messages += f"Current environment: {reading}\n "
+        messages += f"Current environment: {reading}\n "+self.system_prompt[-1]
 
         try:
             response = requests.post(
