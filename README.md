@@ -101,17 +101,24 @@ task.load_details("file/path/starting_state.pkl",env)
 task.solve(env,p)
 ```
 
-
 ## Dependiencies 
-We make use of the PyBullet robot arm m
+Depending on what simulator you decide to use
+### Mujoco
+Mujoco is much simpler but you will need to install the robot arm <a href="https://github.com/google-deepmind/mujoco_menagerie"> from this repository</a>.
+Then you will need to install Mujoco
+```
+pip install mujoco
+```
+
+### Pybullet
+Pybullet will require different dependencies. Firstly you will need to install visual studio, then install the C++ dev tools. Once done you can install pybullet which is much simpler. 
+Pybullet simulators work 
 ```
 pip install pybullet
 ```
 
-## Learning
-It is broken up into varipous parts, the parent model, the child model and the simulation itself. The parent child model is under development but a potential idea for how these tasks could be solved. 
 
-### Parent model 
 
-### Child Model 
+
+
 
