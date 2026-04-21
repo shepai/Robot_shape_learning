@@ -104,8 +104,8 @@ task.solve(env,p)
 ## Dependiencies 
 Depending on what simulator you decide to use
 ### Mujoco
-Mujoco is much simpler but you will need to install the robot arm <a href="https://github.com/google-deepmind/mujoco_menagerie"> from this repository</a>.
-Then you will need to install Mujoco
+Mujoco is much simpler and uses a mmodified robot arm <a href="https://github.com/google-deepmind/mujoco_menagerie"> from this repository</a>. OIur modifications are uploaded under the assets folder. 
+Then you will need to install Mujoco.
 ```
 pip install mujoco
 ```
