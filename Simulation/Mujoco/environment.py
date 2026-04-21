@@ -67,21 +67,17 @@ class Env:
         xml = ""
         for i in range(num_blocks):
             xml += f'''
-            <body name="block_{i}" pos="{i*0.1} 0 0.02">
+            <body name="block_{i}" pos="{i*0.2} 0 0.02">
                 <geom type="box" size="0.02 0.02 0.02"/>
             </body>
             '''
         #add to environment
         insert_point = self.base_xml.find("</worldbody>")
 
-        block_xml = "\n".join(xml)
+        block_xml = xml
         self.base_xml=self.base_xml[:insert_point] + block_xml + "\n" + self.base_xml[insert_point:]
-        
+        print(self.base_xml)
     def step(self):
-        pass
-    def generate_blocks(self,num):
-        pass 
-    def generate_block(self,position,colour,size=1,shape="cube"):
         pass
     def pick_block(self, block_id):
         pass 
@@ -134,6 +130,10 @@ class Env:
 
 if __name__=="__main__":
     e=Env()
+    e.update_task()
+    viewer=mujoco.viewer.launch_passive(e.model, e.data)
+    viewer.close()
+    e.generate_blocks(5)
     e.update_task()
     viewer=mujoco.viewer.launch_passive(e.model, e.data)
     t = 0
