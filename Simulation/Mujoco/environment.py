@@ -98,8 +98,6 @@ class Env:
         self.realtime=temp 
         self.timestep=temp2
         self.populate()
-    def populate(self):
-        pass 
     def move_up(self):
         robot_coords=list(p.getLinkState(self.robot_id, linkIndex=self.ee_index)[0])
         robot_coords[2]+=self.move_Step_amount
