@@ -37,6 +37,24 @@ There are various tasks within the simulation such as building towers, organsing
     </td>
   </tr>
 </table>
+
+### Mujoco 
+We can create an environment by calling it, then generate random blocks, to view waht is going on you will need to use the viewer.
+
+```python
+e=Env()
+e.generate_blocks(5)
+e.update_task()
+viewer=mujoco.viewer.launch_passive(e.model, e.data)
+t = 0
+while viewer.is_running() and t<100:
+        mujoco.mj_step(e.model, e.data)
+        viewer.sync()
+        t += 0.01
+viewer.close()
+```
+
+### PyBullet
 We can create an environment by calling it, then generate random blocks, or generate specific blocks. We can also change the block urdf by giving it the filepath to other 3d models as long as it is in an pybullet accepted format ```blockname="cube_small.urdf"```. 
 
 ```python
