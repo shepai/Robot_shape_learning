@@ -2,6 +2,9 @@ import mujoco as mj
 import mujoco.viewer
 import numpy as np
 import time
+from dm_control import mujoco
+from dm_control.utils import inverse_kinematics
+
 class Env:
     def __init__(self, path="C:/Users/dexte/Documents/mujoco_menagerie-main/kuka_iiwa_14/", timestep=1/240.,realtime=False,speed=1):
         self.realtime=realtime
@@ -53,6 +56,7 @@ class Env:
     def update_task(self):
         self.model = mj.MjModel.from_xml_string(self.base_xml)
         self.data = mj.MjData(self.model)
+        self.physics = mujoco.Physics.from_xml_string(self.base_xml)
     def generate(self): #after all the selections are made this generates the simulation
         #self.model = mujoco.MjModel.from_xml_path(path+"iiwa14.xml")
         #self.data = mujoco.MjData(self.model)
@@ -83,8 +87,16 @@ class Env:
         pass 
     def put_block(self):
         pass 
-    def move_gripper_to(self, fingertip_coords, euler=[0, 3.14, 0],vel=0.9):
-        pass 
+    def move_gripper_to(self, fingertip_coords,vel=0.9):
+        result = inverse_kinematics.qpos_from_site_pose(
+            self.physics,
+            site_name="attachment_site",   # must exist in your XML
+            target_pos=fingertip_coords,
+            max_steps=100
+        )
+        self.physics.data.qpos[:] = result.qpos
+        self.physics.forward()
+        self.data.qpos[:] = self.physics.data.qpos[:]
     def get_observation(self):
         pass 
     def close(self):
@@ -129,15 +141,16 @@ class Env:
 if __name__=="__main__":
     e=Env()
     e.update_task()
-    viewer=mujoco.viewer.launch_passive(e.model, e.data)
+    viewer=mj.viewer.launch_passive(e.model, e.data)
     viewer.close()
     e.generate_blocks(5)
     e.update_task()
-    viewer=mujoco.viewer.launch_passive(e.model, e.data)
+    viewer=mj.viewer.launch_passive(e.model, e.data)
     t = 0
     while viewer.is_running() and t<100:
             #self.data.ctrl[0] = 1.0 * np.sin(t)
-            mujoco.mj_step(e.model, e.data)
+            mj.mj_step(e.model, e.data)
+            e.move_gripper_to([0,0.4,0.2])
             viewer.sync()
             t += 0.01
     viewer.close()
