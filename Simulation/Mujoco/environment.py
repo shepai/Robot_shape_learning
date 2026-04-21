@@ -1,14 +1,37 @@
-import mujoco
+import mujoco as mj
 import mujoco.viewer
 import numpy as np
 import time
-path="/its/home/drs25/Documents/mujoco_menagerie-main/kuka_iiwa_14/"
 class Env:
-    def __init__(self, timestep=1/240.,realtime=False,speed=1):
+    def __init__(self, path="C:/Users/dexte/Documents/mujoco_menagerie-main/kuka_iiwa_14/", timestep=1/240.,realtime=False,speed=1):
         self.realtime=realtime
         self.timestep=timestep
         self.reset()
         self.speed=speed
+        self.base_xml="""<mujoco model="iiwa14 scene">
+  <include file=\""""+path+"""iiwa14.xml"/>
+
+  <statistic center="0.2 0 0.2" extent="1.0"/>
+
+  <visual>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3" specular="0 0 0"/>
+    <rgba haze="0.15 0.25 0.35 1"/>
+    <global azimuth="-120" elevation="-20"/>
+  </visual>
+
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072"/>
+    <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3"
+      markrgb="0.8 0.8 0.8" width="300" height="300"/>
+    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2"/>
+  </asset>
+
+  <worldbody>
+    <light pos="0 0 1.5" dir="0 0 -1" directional="true"/>
+    <geom name="floor" size="0 0 0.05" type="plane" material="groundplane"/>
+  </worldbody>
+</mujoco>
+"""
     def reset(self): #reset simulation variables
         self.block_file=[]
         self.positions=[]
@@ -27,10 +50,33 @@ class Env:
         self.timestep = self.timestep
         self.move_Step_amount=0.2
         self.realtime=self.realtime
+    def update_task(self):
+        self.model = mj.MjModel.from_xml_string(self.base_xml)
+        self.data = mj.MjData(self.model)
     def generate(self): #after all the selections are made this generates the simulation
         #self.model = mujoco.MjModel.from_xml_path(path+"iiwa14.xml")
         #self.data = mujoco.MjData(self.model)
         pass 
+    def generate_block_xml(name, pos, size=(0.02, 0.02, 0.02), color=(1, 0, 0, 1)):
+        return f"""
+        <body name="{name}" pos="{pos[0]} {pos[1]} {pos[2]}">
+            <geom type="box" size="{size[0]} {size[1]} {size[2]}" rgba="{color[0]} {color[1]} {color[2]} {color[3]}"/>
+        </body>
+        """
+    def generate_blocks(self,num_blocks):
+        xml = ""
+        for i in range(num_blocks):
+            xml += f'''
+            <body name="block_{i}" pos="{i*0.1} 0 0.02">
+                <geom type="box" size="0.02 0.02 0.02"/>
+            </body>
+            '''
+        #add to environment
+        insert_point = self.base_xml.find("</worldbody>")
+
+        block_xml = "\n".join(xml)
+        self.base_xml=self.base_xml[:insert_point] + block_xml + "\n" + self.base_xml[insert_point:]
+        
     def step(self):
         pass
     def generate_blocks(self,num):
@@ -88,6 +134,7 @@ class Env:
 
 if __name__=="__main__":
     e=Env()
+    e.update_task()
     viewer=mujoco.viewer.launch_passive(e.model, e.data)
     t = 0
     while viewer.is_running() and t<100:
