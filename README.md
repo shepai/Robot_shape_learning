@@ -122,10 +122,11 @@ task.solve(env,p)
 ## Dependiencies 
 Depending on what simulator you decide to use
 ### Mujoco
-Mujoco is much simpler and uses a mmodified robot arm <a href="https://github.com/google-deepmind/mujoco_menagerie"> from this repository</a>. OIur modifications are uploaded under the assets folder. 
+Mujoco is much simpler and uses a mmodified robot arm <a href="https://github.com/google-deepmind/mujoco_menagerie"> from this repository</a>. Our modifications are uploaded under the assets folder. 
 Then you will need to install Mujoco.
 ```
 pip install mujoco
+pip install dm_control
 ```
 
 ### Pybullet
