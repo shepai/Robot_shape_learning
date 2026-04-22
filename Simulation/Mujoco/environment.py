@@ -10,7 +10,6 @@ class Env:
         self.realtime=realtime
         self.attached_block=None
         self.timestep=timestep
-        self.reset()
         self.speed=speed
         self.base_xml="""<mujoco model="iiwa14 scene">
   <include file=\""""+path+"""iiwa14.xml"/>
@@ -37,6 +36,7 @@ class Env:
 </mujoco>
 """
         self.base_xml_clone=self.base_xml
+        self.reset()
     def reset(self): #reset simulation variables
         self.block_file=[]
         self.positions=[]
@@ -55,6 +55,8 @@ class Env:
         self.timestep = self.timestep
         self.move_Step_amount=0.2
         self.realtime=self.realtime
+        self.base_xml=self.base_xml_clone
+        self.update_task()
     def update_task(self):
         self.model = mj.MjModel.from_xml_string(self.base_xml)
         self.data = mj.MjData(self.model)
@@ -63,12 +65,22 @@ class Env:
         #self.model = mujoco.MjModel.from_xml_path(path+"iiwa14.xml")
         #self.data = mujoco.MjData(self.model)
         pass 
-    def generate_block_xml(name, pos, size=(0.02, 0.02, 0.02), color=(1, 0, 0, 1)):
+    def getBasePositionAndOrientation(self,block_id):
+        block_name = block_id
+        block_id = mj.mj_name2id(self.model, mj.mjtObj.mjOBJ_BODY, block_name)
+        pos = self.data.xpos[block_id].copy()
+        quat = self.data.xquat[block_id].copy()
+        return pos, quat
+    def generate_block_xml(self,name, pos, size=(0.02, 0.02, 0.02), color=(1, 0, 0, 1)):
+        self.block_ids.append(f"block_{i}")
+        self.colours.append(f"{color[0]} {color[1]} {color[2]} {color[3]}")
+        self.sizes.append(f"{size[0]} {size[1]} {size[2]}")
         return f"""
         <body name="{name}" pos="{pos[0]} {pos[1]} {pos[2]}">
             <geom type="box" size="{size[0]} {size[1]} {size[2]}" rgba="{color[0]} {color[1]} {color[2]} {color[3]}"/>
         </body>
         """
+
     def generate_blocks(self,num_blocks):
         block_xml = ""
         weld_xml = ""
@@ -80,7 +92,9 @@ class Env:
                 <site name="site_{i}" pos="0 0 0.1"/>
             </body>
             '''
-
+            self.block_ids.append(f"block_{i}")
+            self.colours.append(f"{1} {0} {0} {1}")
+            self.sizes.append("0.02 0.02 0.02")
             # 🔥 one weld per block (inactive by default)
             weld_xml += f'''
             <weld name="weld_block_{i}" site1="attachment_site" site2="site_{i}" active="false"/>
