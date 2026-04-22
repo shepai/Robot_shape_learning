@@ -11,6 +11,7 @@ class Env:
         self.attached_block=None
         self.timestep=timestep
         self.speed=speed
+        self.viewer=None
         self.base_xml="""<mujoco model="iiwa14 scene">
   <include file=\""""+path+"""iiwa14.xml"/>
 
@@ -37,6 +38,8 @@ class Env:
 """
         self.base_xml_clone=self.base_xml
         self.reset()
+    def setViewer(self,view):
+        self.viewer=view
     def reset(self): #reset simulation variables
         self.block_file=[]
         self.positions=[]
@@ -61,6 +64,9 @@ class Env:
         self.model = mj.MjModel.from_xml_string(self.base_xml)
         self.data = mj.MjData(self.model)
         self.physics = mujoco.Physics.from_xml_string(self.base_xml)
+        if self.viewer is not None: 
+            self.close()
+            self.viewer=mj.viewer.launch_passive(self.model, self.data, show_left_ui=False,show_right_ui=False)
     def generate(self): #after all the selections are made this generates the simulation
         #self.model = mujoco.MjModel.from_xml_path(path+"iiwa14.xml")
         #self.data = mujoco.MjData(self.model)
@@ -153,8 +159,8 @@ class Env:
                 self.data.qvel[qvel_adr:qvel_adr+6] = 0
 
             # --- RENDER ---
-            if viewer is not None:
-                viewer.sync()
+            if self.viewer is not None:
+                self.viewer.sync()
                 if self.realtime:
                     time.sleep(self.speed)
 
@@ -201,7 +207,7 @@ class Env:
     def get_observation(self):
         pass 
     def close(self):
-        pass 
+        self.viewer.close()
     def recreate_from_file(self,env):
         #=load in a file and recreate the objects where they should be
         self.reset()
@@ -238,26 +244,29 @@ class Env:
 
 
 if __name__=="__main__":
+    
     e=Env(path="C:/Users/dexte/Documents/GitHub/Robot_shape_learning/Assets/kuka_iiwa_14/",realtime=1,speed=1/440)
+    viewer= mj.viewer.launch_passive(e.model, e.data)
+    e.setViewer(viewer)
     e.generate_blocks(5)
     e.update_task()
-    viewer= mj.viewer.launch_passive(e.model, e.data)
+    
     for i in range(5):
         #self.data.ctrl[0] = 1.0 * np.sin(t)
         e.move_gripper_to([0.4+(i*0.1),0.4,0.1])
-        e.step(viewer=viewer)
+        e.step()
         e.pick_block()
         viewer.sync()
         e.move_gripper_to([0.4,0.4,0.5])
-        e.step(viewer=viewer)
+        e.step()
         viewer.sync()
         e.move_gripper_to([0.4,-0.4,0.3])
-        e.step(viewer=viewer)
+        e.step()
         viewer.sync()
         e.put_block()
-        e.step(viewer=viewer)
+        e.step()
         viewer.sync()
         e.move_gripper_to([0.5,0.4,0.5])
-        e.step(viewer=viewer)
+        e.step()
         viewer.sync()
     viewer.close()
