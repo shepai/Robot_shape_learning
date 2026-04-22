@@ -6,7 +6,7 @@ from dm_control import mujoco
 from dm_control.utils import inverse_kinematics
 
 class Env:
-    def __init__(self, path="C:/Users/dexte/Documents/mujoco_menagerie-main/kuka_iiwa_14/", timestep=1/240.,realtime=False,speed=1):
+    def __init__(self, path="C:/Users/dexte/Documents/mujoco_menagerie-main/kuka_iiwa_14/", timestep=1/240.,realtime=False,speed=1/24):
         self.realtime=realtime
         self.attached_block=None
         self.timestep=timestep
@@ -74,14 +74,16 @@ class Env:
         weld_xml = ""
         for i in range(num_blocks):
             block_xml += f'''
-            <body name="block_{i}" pos="{i*0.2} 0 0.02">
-                <geom type="box" size="0.02 0.02 0.02" mass="0.1"/>
+            <body name="block_{i}" pos="{(i*0.08)+0.4} 0.4 0.05">
+                <joint type="free"/>
+                <geom type="box" size="0.02 0.02 0.02" mass="1"/>
+                <site name="site_{i}" pos="0 0 0.1"/>
             </body>
             '''
 
             # 🔥 one weld per block (inactive by default)
             weld_xml += f'''
-            <weld name="weld_block_{i}" body1="link7" body2="block_{i}" active="false"/>
+            <weld name="weld_block_{i}" site1="attachment_site" site2="site_{i}" active="false"/>
             '''
 
         insert_point = self.base_xml_clone.find("</worldbody>")
@@ -110,61 +112,77 @@ class Env:
                 eq_section +
                 self.base_xml[insert_point:]
             )
-    def step(self,step_size=10,viewer=None):
-        for i in range(step_size):
-            mj.mj_step(self.model, self.data)
-            if type(viewer)!=type(None):
-                viewer.sync()
-    def pick_block(self, block_id=None):
-        if type(block_id)==type(None):
-            block_id = self.get_nearest_block()
-        print(block_id)
-        if type(block_id)!=type(None):
-            eq_name = f"weld_block_{block_id}"
-            eq_id = self.model.eq(eq_name).id
+    def pwm(self, kp=200, kd=5): 
+        q = self.data.qpos[:7]
+        qd = self.data.qvel[:7]
 
-            self.data.eq_active[eq_id] = 1
+        torque = kp * (self.targets - q) - kd * qd
+        self.data.ctrl[:7] = torque
+    def step(self, step_size=300, viewer=None):
+        site_id = self.model.site("attachment_site").id
+
+        for _ in range(step_size):
+            self.pwm()
+            mj.mj_step(self.model, self.data)
+            if self.attached_block is not None:
+                site_id = self.model.site("attachment_site").id
+                block_bid = self.model.body(self.attached_block).id
+
+                joint_id = self.model.body_jntadr[block_bid]
+                qpos_adr = self.model.jnt_qposadr[joint_id]
+                qvel_adr = self.model.jnt_dofadr[joint_id]
+
+                self.data.qpos[qpos_adr:qpos_adr+3] = self.data.site_xpos[site_id]
+                quat = np.zeros(4)
+                mj.mju_mat2Quat(quat, self.data.site_xmat[site_id])
+                self.data.qpos[qpos_adr+3:qpos_adr+7] = quat
+                self.data.qvel[qvel_adr:qvel_adr+6] = 0
+
+            # --- RENDER ---
+            if viewer is not None:
+                viewer.sync()
+                if self.realtime:
+                    time.sleep(self.speed)
+
+    def pick_block(self, block_id=None):
+        if block_id is None:
+            block_id = self.get_nearest_block()
+            mj.mj_forward(self.model, self.data)
             self.attached_block = block_id
-        mj.mj_forward(self.model, self.data)
+        self.attached_block = block_id   
+
     def put_block(self):
-        if self.attached_block is None:
-            return
-        eq_name = f"weld_block_{self.attached_block}"
-        eq_id = self.model.eq(eq_name).id
-        self.data.eq_active[eq_id] = 0
         self.attached_block = None
-        mj.mj_forward(self.model, self.data)
-    def move_gripper_to(self, fingertip_coords,vel=0.9):
+    def move_gripper_to(self, fingertip_coords):
         result = inverse_kinematics.qpos_from_site_pose(
             self.physics,
-        site_name="attachment_site",
-        joint_names=["joint"+str(i) for i in range(1,8)],
-        target_pos=fingertip_coords,
-        max_steps=100
+            site_name="attachment_site",
+            joint_names=["joint"+str(i) for i in range(1,8)],
+            target_pos=fingertip_coords,
+            max_steps=200
         )
-        self.physics.data.qpos[:] = result.qpos
-        self.physics.forward()
-        self.data.qpos[:] = self.physics.data.qpos[:]
-        #mj.mj_step(self.model, self.data)
-    def get_nearest_block(self, threshold=0.15):
+
+        # ONLY update sim state once
+        self.targets = result.qpos[:7]
+        #mj.mj_forward(self.model, self.data)
+    def get_nearest_block(self, threshold=0.5):
+        mj.mj_forward(self.model, self.data)
         site_id = self.model.site("attachment_site").id
         gripper_pos = self.data.site_xpos[site_id]
-
         nearest = None
         min_dist = float("inf")
-        real_counter=0
         for i in range(self.model.nbody):
             name = self.model.body(i).name
-
-            if name.startswith("block"):
-                pos = self.data.xpos[i]
-                dist = np.linalg.norm(pos - gripper_pos)
-
-                if dist < threshold and dist < min_dist:
-                    nearest = real_counter
-                    min_dist = dist
-                real_counter+=1
-
+            if not name.startswith("block"):
+                continue
+            body_id = self.model.body(i).id
+            pos = self.data.xpos[body_id]
+            dist = np.linalg.norm(pos - gripper_pos)
+            if dist < min_dist:
+                min_dist = dist
+                nearest = body_id
+        if min_dist > threshold:
+            return None
         return nearest
     def get_observation(self):
         pass 
@@ -206,28 +224,26 @@ class Env:
 
 
 if __name__=="__main__":
-    e=Env()
-    e.update_task()
-    viewer=mj.viewer.launch_passive(e.model, e.data)
-    viewer.close()
+    e=Env(path="C:/Users/dexte/Documents/GitHub/Robot_shape_learning/Assets/kuka_iiwa_14/",realtime=1,speed=1/440)
     e.generate_blocks(5)
     e.update_task()
-    t = 0
-    with mj.viewer.launch_passive(e.model, e.data) as viewer:
-        while viewer.is_running() and t<100:
-                #self.data.ctrl[0] = 1.0 * np.sin(t)
-                e.move_gripper_to([0.2,0.0,0.1])
-                e.step(viewer=viewer)
-                e.pick_block()
-                viewer.sync()
-                time.sleep(1)
-                e.move_gripper_to([0.2,0,0.5])
-                e.step(viewer=viewer)
-                viewer.sync()
-                time.sleep(1)
-                e.put_block()
-                e.step(viewer=viewer)
-                viewer.sync()
-                time.sleep(1)
-                t += 0.01
+    viewer= mj.viewer.launch_passive(e.model, e.data)
+    for i in range(5):
+        #self.data.ctrl[0] = 1.0 * np.sin(t)
+        e.move_gripper_to([0.4+(i*0.1),0.4,0.1])
+        e.step(viewer=viewer)
+        e.pick_block()
+        viewer.sync()
+        e.move_gripper_to([0.4,0.4,0.5])
+        e.step(viewer=viewer)
+        viewer.sync()
+        e.move_gripper_to([0.4,-0.4,0.5])
+        e.step(viewer=viewer)
+        viewer.sync()
+        e.put_block()
+        e.step(viewer=viewer)
+        viewer.sync()
+        e.move_gripper_to([0.5,0.4,0.5])
+        e.step(viewer=viewer)
+        viewer.sync()
     viewer.close()
