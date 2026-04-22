@@ -112,13 +112,13 @@ class Env:
                 eq_section +
                 self.base_xml[insert_point:]
             )
-    def pwm(self, kp=200, kd=5): 
+    def pwm(self, kp=200, kd=1): 
         q = self.data.qpos[:7]
         qd = self.data.qvel[:7]
 
         torque = kp * (self.targets - q) - kd * qd
         self.data.ctrl[:7] = torque
-    def step(self, step_size=300, viewer=None):
+    def step(self, step_size=100, viewer=None):
         site_id = self.model.site("attachment_site").id
 
         for _ in range(step_size):
@@ -237,7 +237,7 @@ if __name__=="__main__":
         e.move_gripper_to([0.4,0.4,0.5])
         e.step(viewer=viewer)
         viewer.sync()
-        e.move_gripper_to([0.4,-0.4,0.5])
+        e.move_gripper_to([0.4,-0.4,0.3])
         e.step(viewer=viewer)
         viewer.sync()
         e.put_block()
