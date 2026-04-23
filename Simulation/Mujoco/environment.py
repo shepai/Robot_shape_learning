@@ -67,6 +67,7 @@ class Env:
         if self.viewer is not None: 
             self.close()
             self.viewer=mj.viewer.launch_passive(self.model, self.data, show_left_ui=False,show_right_ui=False)
+        self.move_gripper_to([0,0,0.5])
     def generate(self): #after all the selections are made this generates the simulation
         #self.model = mujoco.MjModel.from_xml_path(path+"iiwa14.xml")
         #self.data = mujoco.MjData(self.model)
@@ -77,16 +78,51 @@ class Env:
         pos = self.data.xpos[block_id].copy()
         quat = self.data.xquat[block_id].copy()
         return pos, quat
-    def generate_block_xml(self,name, pos, size=(0.02, 0.02, 0.02), color=(1, 0, 0, 1)):
+    def generate_block(self, pos, color=(1, 0, 0, 1),size=(0.02, 0.02, 0.02)):
+        if type(size)==type(1.0) or type(size)==type(1):#incase using percentage
+            size=(0.02*size, 0.02*size, 0.02*size)
+        i=len(self.block_ids)
         self.block_ids.append(f"block_{i}")
         self.colours.append(f"{color[0]} {color[1]} {color[2]} {color[3]}")
         self.sizes.append(f"{size[0]} {size[1]} {size[2]}")
-        return f"""
-        <body name="{name}" pos="{pos[0]} {pos[1]} {pos[2]}">
-            <geom type="box" size="{size[0]} {size[1]} {size[2]}" rgba="{color[0]} {color[1]} {color[2]} {color[3]}"/>
-        </body>
-        """
+        block_xml = ""
+        weld_xml = ""
+        block_xml += f'''
+            <body name="block_{i}" pos="{pos[0]} {pos[1]} {pos[2]}">
+                <joint type="free"/>
+                <geom type="box" size="{size[0]} {size[1]} {size[2]}" mass="1" rgba="{color[0]} {color[1]} {color[2]} {color[3]}"/>
+                <site name="site_{i}" pos="0 0 0.1"/>
+            </body>
+            '''
+        weld_xml += f'''
+            <weld name="weld_block_{i}" site1="attachment_site" site2="site_{i}" active="false"/>
+            '''
+        insert_point = self.base_xml.find("</worldbody>")
+        self.base_xml = (
+            self.base_xml[:insert_point] +
+            block_xml +
+            "\n" +
+            self.base_xml[insert_point:]
+        )
 
+        # --- insert (or create) equality section ---
+        if "<equality>" in self.base_xml:
+            insert_eq = self.base_xml.find("</equality>")
+            self.base_xml = (
+                self.base_xml[:insert_eq] +
+                weld_xml +
+                "\n" +
+                self.base_xml[insert_eq:]
+            )
+        else:
+            # create equality section if it doesn't exist
+            insert_point = self.base_xml.find("</mujoco>")
+            eq_section = f"<equality>\n{weld_xml}\n</equality>\n"
+            self.base_xml = (
+                self.base_xml[:insert_point] +
+                eq_section +
+                self.base_xml[insert_point:]
+            )
     def generate_blocks(self,num_blocks):
         block_xml = ""
         weld_xml = ""
