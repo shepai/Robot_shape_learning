@@ -216,16 +216,16 @@ class task2(task):
             cube_pos=list(cube_pos)
             cube_pos[2]+=0.08
             env.move_gripper_to(cube_pos) #move to just above it
-            env.step(10)
+            env.step(100)
             env.pick_block(env.block_ids[i]) #pick up
             cube_pos[2]+=0.38
             env.move_gripper_to(cube_pos) #move up to avoid hitting into things
-            env.step(10)
+            env.step(100)
             cube_pos[0:2]=target_pos[0:2]
             env.move_gripper_to(cube_pos) #move up to avoid hitting into things
-            env.step(10)
+            env.step(100)
             env.move_gripper_to(target_pos) #move to the target
-            env.step(15) #small delay
+            env.step(150) #small delay
             env.put_block() #release
             env.move_gripper_to(cube_pos)
             #target_pos[2]+=0.05
@@ -320,16 +320,16 @@ class task3(task):
             cube_pos=list(cube_pos)
             cube_pos[2]+=0.08
             env.move_gripper_to(cube_pos) #move to just above it
-            env.step(10)
+            env.step(100)
             env.pick_block(env.block_ids[i]) #pick up
             cube_pos[2]+=0.38
             env.move_gripper_to(cube_pos) #move up to avoid hitting into things
-            env.step(10)
+            env.step(100)
             cube_pos[0:2]=temp_loc[0:2]
             env.move_gripper_to(cube_pos) #move up to avoid hitting into things
-            env.step(10)
+            env.step(100)
             env.move_gripper_to(temp_loc) #move to the target
-            env.step(15) #small delay
+            env.step(150) #small delay
             env.put_block() #release
             env.move_gripper_to(cube_pos)
         
@@ -803,7 +803,7 @@ class task8(task):
             aabb_min, aabb_max = p.getAABB(env.block_ids[i]) #TODO make function
             size = [aabb_max[i] - aabb_min[i] for i in range(3)][0] #enforce the first index as its a cube
 
-            visual_data = p.getVisualShapeData(env.block_ids[i]) #Todo make function
+            visual_data = env.getVisualShapeData(env.block_ids[i]) 
             colour=visual_data[0][7]
             grey_intensity=0.299*colour[0]+0.587*colour[1]+0.114*colour[2]
             placed=False 
@@ -875,7 +875,7 @@ class task9(task):
         highest_idx=0
         highest=0
         for i in range(len(env.block_ids)):
-            visual_data = p.getVisualShapeData(env.block_ids[i]) #TODO
+            visual_data = env.getVisualShapeData(env.block_ids[i]) 
             colour=visual_data[0][7]
             if max(colour[0:3])>highest: #if the maximum channel is less than current lowest
                 highest=max(colour[0:3])
@@ -989,11 +989,12 @@ class taskX(task):
         pass
 if __name__=="__main__":
     from environment import *
-    e=Env("C:/Users/dexte/Documents/GitHub/Robot_shape_learning/Assets/kuka_iiwa_14/",realtime=1,speed=1/240)
+    e=Env("C:/Users/dexte/Documents/GitHub/Robot_shape_learning/Assets/kuka_iiwa_14/",realtime=0)
     viewer= mj.viewer.launch_passive(e.model, e.data, show_left_ui=False,show_right_ui=False)
     e.setViewer(viewer)
     #Task 1: arrange into a tower
-    task=task2()
+    task=task3()
     task.generate(e) #make the blocks show
     task.solve(e)
+    e.step(10000)
     time.sleep(5)

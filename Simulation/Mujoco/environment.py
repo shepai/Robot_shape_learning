@@ -182,16 +182,16 @@ class Env:
                 eq_section +
                 self.base_xml[insert_point:]
             )
-    def pwm(self, kp=200, kd=1): 
-        q = self.data.qpos[:7]
-        qd = self.data.qvel[:7]
-
-        torque = kp * (self.targets - q) - kd * qd
-        self.data.ctrl[:7] = torque
-    def step(self, step_size=100, viewer=None):
+    def pwm(self, kp=150, kd=30): 
+        #q = self.data.qpos[:7]
+        #qd = self.data.qvel[:7]
+        #torque = kp * (self.targets - q) - kd * qd
+        self.data.ctrl[:7] = self.targets
+    def step(self, step_size=500, viewer=None):
         site_id = self.model.site("attachment_site").id
 
         for _ in range(step_size):
+            mj.mj_forward(self.model, self.data)
             self.pwm()
             mj.mj_step(self.model, self.data)
             if self.attached_block is not None:
@@ -224,6 +224,9 @@ class Env:
     def put_block(self):
         self.attached_block = None
     def move_gripper_to(self, fingertip_coords):
+        self.physics.data.qpos[:] = self.data.qpos[:]
+        self.physics.data.qvel[:] = self.data.qvel[:]
+        self.physics.forward()
         result = inverse_kinematics.qpos_from_site_pose(
             self.physics,
             site_name="attachment_site",
@@ -295,7 +298,7 @@ class Env:
 
 if __name__=="__main__":
     
-    e=Env(path="C:/Users/dexte/Documents/GitHub/Robot_shape_learning/Assets/kuka_iiwa_14/",realtime=1,speed=1/440)
+    e=Env(path="C:/Users/dexte/Documents/GitHub/Robot_shape_learning/Assets/kuka_iiwa_14/",realtime=0,speed=1/440)
     viewer= mj.viewer.launch_passive(e.model, e.data)
     e.setViewer(viewer)
     e.generate_blocks(5)
@@ -303,7 +306,7 @@ if __name__=="__main__":
     
     for i in range(5):
         #self.data.ctrl[0] = 1.0 * np.sin(t)
-        e.move_gripper_to([0.4+(i*0.1),0.4,0.1])
+        e.move_gripper_to([0.4+(i*0.08),0.4,0.1])
         e.step()
         e.pick_block()
         viewer.sync()
