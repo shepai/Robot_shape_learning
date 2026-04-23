@@ -78,6 +78,20 @@ class Env:
         pos = self.data.xpos[block_id].copy()
         quat = self.data.xquat[block_id].copy()
         return pos, quat
+    def getVisualShapeData(self,block_id):
+        num=self.block_ids.index(block_id)
+        pos,ore=self.getBasePositionAndOrientation(block_id)
+        return [(
+            num,
+            None, #link index
+            None, #geometry type
+            self.sizes[num],
+            None, #block type filenmae
+            pos,
+            ore,
+            self.colours[num],
+            None # texture
+        )]
     def generate_block(self, pos, color=(1, 0, 0, 1),size=(0.02, 0.02, 0.02)):
         if type(size)==type(1.0) or type(size)==type(1):#incase using percentage
             size=(0.02*size, 0.02*size, 0.02*size)

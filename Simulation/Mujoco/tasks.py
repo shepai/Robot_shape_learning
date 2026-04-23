@@ -140,16 +140,16 @@ class task1(task):
             cube_pos=list(cube_pos)
             cube_pos[2]+=0.08
             env.move_gripper_to(cube_pos) #move to just above it
-            env.step(10)
+            env.step(100)
             env.pick_block(env.block_ids[in_order[i]]) #pick up
             cube_pos[2]+=0.38
             env.move_gripper_to(cube_pos) #move up to avoid hitting into things
-            env.step(10)
+            env.step(100)
             cube_pos[0:2]=deepcopy(target_pos[0:2])
             env.move_gripper_to(cube_pos) #move up to avoid hitting into things
-            env.step(10)
+            env.step(100)
             env.move_gripper_to(target_pos) #move to the target
-            env.step(15) #small delay
+            env.step(150) #small delay
             env.put_block() #release
             env.move_gripper_to(cube_pos)
             target_pos[2]+=0.05 #move upwards
@@ -992,8 +992,8 @@ if __name__=="__main__":
     e=Env("C:/Users/dexte/Documents/GitHub/Robot_shape_learning/Assets/kuka_iiwa_14/",realtime=1,speed=1/240)
     viewer= mj.viewer.launch_passive(e.model, e.data, show_left_ui=False,show_right_ui=False)
     e.setViewer(viewer)
-    e.reset()
     #Task 1: arrange into a tower
-    task=task1()
+    task=task2()
     task.generate(e) #make the blocks show
     task.solve(e)
+    time.sleep(5)
