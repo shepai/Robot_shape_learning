@@ -288,7 +288,7 @@ class task3(task):
                 break
         env.update_task()
         env.step(100)
-    def solve(self,env,p):
+    def solve(self,env):
         sorted_ids=[] 
         shades=[]
         for i in range(len(env.block_ids)):
@@ -475,7 +475,7 @@ class task5(task):
         env.generate_block([x_bounds,y_bounds,0.1],colour,1,"sphere_small.urdf")
         env.makeFlat([0.5,-0.5,0.2],colour,length = 0.6,width  = 0.6,height = 0.1,base=0)
         env.step(100)
-    def solve(self,env,p):
+    def solve(self,env):
         ball=None 
         block=None
         for i in range(len(env.block_ids)):
@@ -557,7 +557,7 @@ class task6(task):
         
         #make lines of the same colour with missing slots, and then the missing pieces in another pile
 
-    def solve(self,env,p):
+    def solve(self,env):
         def find_nearest(d, value, tol=0.01):
             # find key in dict d closest to value within tolerance tol
             keys = np.array(list(d.keys()))
@@ -709,7 +709,7 @@ class task7(task):
             else:
                 break
         env.step(100)
-    def solve(self,env,p):
+    def solve(self,env):
         point=np.array([np.random.uniform(low=0.4, high=0.5), np.random.uniform(low=-0.6, high=0.0), 0.10])
         targets=[]
         heights=[0,0,0]
@@ -993,7 +993,7 @@ if __name__=="__main__":
     viewer= mj.viewer.launch_passive(e.model, e.data, show_left_ui=False,show_right_ui=False)
     e.setViewer(viewer)
     #Task 1: arrange into a tower
-    task=task2()
+    task=task8()
     task.generate(e) #make the blocks show
     task.solve(e)
     e.step(100)
