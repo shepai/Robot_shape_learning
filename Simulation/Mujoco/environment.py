@@ -257,8 +257,45 @@ class Env:
         if min_dist > threshold:
             return None
         return nearest
+    def getContactPoints(self,bodyA,bodyB):
+        contacts = []
+        for i in range(self.data.ncon):
+            con = self.data.contact[i]
+            g1 = con.geom1
+            g2 = con.geom2
+
+            b1 = self.model.geom_bodyid[g1]
+            b2 = self.model.geom_bodyid[g2]
+
+            if (b1 == bodyA and b2 == bodyB) or (b1 == bodyB and b2 == bodyA):
+                contacts.append(con)
+        return contacts
     def get_observation(self):
-        pass 
+        blocks=[]
+        colours=[]
+        names=[]
+        sizes=[]
+        contacts_=[]
+        holding = None
+        for i in range(len(self.block_ids)):
+            cube_pos, _ = self.getBasePositionAndOrientation(self.block_ids[i])
+            blocks.append(cube_pos)
+            visual_data = self.getVisualShapeData(self.block_ids[i])
+            colours.append(visual_data[0][7])
+            names.append(self.block_file[i])
+            sizes.append(self.sizes[i])
+            #get contact indicies
+            contact_pairs=[]
+            for j in range(i + 1, len(self.block_ids)):
+                contacts = self.getContactPoints(bodyA=self.block_ids[i], bodyB=self.block_ids[j])
+                if len(contacts) > 0:
+                    contact_pairs.append(j)
+            contacts_.append(contact_pairs)
+
+        robot_coords=p.getLinkState(self.robot_id, linkIndex=self.ee_index)[0]
+        return {"blocks":blocks,"block_colours":colours,"robot_end_position":robot_coords,
+                "holding_constraint":self.holding_constraint,"block_name":names,
+                "sizes":sizes,"contacts":contacts_,"holding":holding}
     def close(self):
         self.viewer.close()
     def recreate_from_file(self,env):
@@ -271,27 +308,27 @@ class Env:
         self.timestep=temp2
         self.populate()
     def move_up(self):
-        robot_coords=list(p.getLinkState(self.robot_id, linkIndex=self.ee_index)[0])
+        robot_coords=list(self.data.site_xpos[self.model.site_name2id("attachment_site")])
         robot_coords[2]+=self.move_Step_amount
         self.move_gripper_to(robot_coords)
     def move_down(self):
-        robot_coords=list(p.getLinkState(self.robot_id, linkIndex=self.ee_index)[0])
+        robot_coords=list(self.data.site_xpos[self.model.site_name2id("attachment_site")])
         robot_coords[2]-=self.move_Step_amount
         self.move_gripper_to(robot_coords)
     def left(self):
-        robot_coords=list(p.getLinkState(self.robot_id, linkIndex=self.ee_index)[0])
+        robot_coords=list(self.data.site_xpos[self.model.site_name2id("attachment_site")])
         robot_coords[1]+=self.move_Step_amount
         self.move_gripper_to(robot_coords)
     def right(self):
-        robot_coords=list(p.getLinkState(self.robot_id, linkIndex=self.ee_index)[0])
+        robot_coords=list(self.data.site_xpos[self.model.site_name2id("attachment_site")])
         robot_coords[1]-=self.move_Step_amount
         self.move_gripper_to(robot_coords)
     def forward(self):
-        robot_coords=list(p.getLinkState(self.robot_id, linkIndex=self.ee_index)[0])
+        robot_coords=list(self.data.site_xpos[self.model.site_name2id("attachment_site")])
         robot_coords[0]+=self.move_Step_amount
         self.move_gripper_to(robot_coords)
     def backward(self):
-        robot_coords=list(p.getLinkState(self.robot_id, linkIndex=self.ee_index)[0])
+        robot_coords=list(self.data.site_xpos[self.model.site_name2id("attachment_site")])
         robot_coords[0]-=self.move_Step_amount
         self.move_gripper_to(robot_coords)
 
