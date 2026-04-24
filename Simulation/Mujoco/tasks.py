@@ -993,8 +993,9 @@ if __name__=="__main__":
     viewer= mj.viewer.launch_passive(e.model, e.data, show_left_ui=False,show_right_ui=False)
     e.setViewer(viewer)
     #Task 1: arrange into a tower
-    task=task3()
+    task=task2()
     task.generate(e) #make the blocks show
     task.solve(e)
-    e.step(10000)
-    time.sleep(5)
+    e.step(100)
+    time.sleep(1)
+    print(e.get_observation())

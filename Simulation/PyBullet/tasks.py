@@ -1004,3 +1004,4 @@ if __name__=="__main__":
     task=task10()
     task.load_details("/its/home/drs25/Documents/GitHub/Robot_shape_learning/Assets/Data/example.pkl",env)
     task.solve(env,p)
+    print(env.get_observation())

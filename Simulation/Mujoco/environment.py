@@ -99,6 +99,7 @@ class Env:
         self.block_ids.append(f"block_{i}")
         self.colours.append(f"{color[0]} {color[1]} {color[2]} {color[3]}")
         self.sizes.append(f"{size[0]} {size[1]} {size[2]}")
+        self.block_file.append("cube")
         block_xml = ""
         weld_xml = ""
         block_xml += f'''
@@ -151,6 +152,7 @@ class Env:
             self.block_ids.append(f"block_{i}")
             self.colours.append(f"{1} {0} {0} {1}")
             self.sizes.append("0.02 0.02 0.02")
+            self.block_file.append("cube")
             # 🔥 one weld per block (inactive by default)
             weld_xml += f'''
             <weld name="weld_block_{i}" site1="attachment_site" site2="site_{i}" active="false"/>
@@ -292,7 +294,7 @@ class Env:
                     contact_pairs.append(j)
             contacts_.append(contact_pairs)
 
-        robot_coords=p.getLinkState(self.robot_id, linkIndex=self.ee_index)[0]
+        robot_coords=self.data.site_xpos[mj.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_SITE,"attachment_site")]
         return {"blocks":blocks,"block_colours":colours,"robot_end_position":robot_coords,
                 "holding_constraint":self.holding_constraint,"block_name":names,
                 "sizes":sizes,"contacts":contacts_,"holding":holding}
@@ -308,27 +310,27 @@ class Env:
         self.timestep=temp2
         self.populate()
     def move_up(self):
-        robot_coords=list(self.data.site_xpos[self.model.site_name2id("attachment_site")])
+        robot_coords=list(self.data.site_xpos[mj.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_SITE,"attachment_site")])
         robot_coords[2]+=self.move_Step_amount
         self.move_gripper_to(robot_coords)
     def move_down(self):
-        robot_coords=list(self.data.site_xpos[self.model.site_name2id("attachment_site")])
+        robot_coords=list(self.data.site_xpos[mj.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_SITE,"attachment_site")])
         robot_coords[2]-=self.move_Step_amount
         self.move_gripper_to(robot_coords)
     def left(self):
-        robot_coords=list(self.data.site_xpos[self.model.site_name2id("attachment_site")])
+        robot_coords=list(self.data.site_xpos[mj.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_SITE,"attachment_site")])
         robot_coords[1]+=self.move_Step_amount
         self.move_gripper_to(robot_coords)
     def right(self):
-        robot_coords=list(self.data.site_xpos[self.model.site_name2id("attachment_site")])
+        robot_coords=list(self.data.site_xpos[mj.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_SITE,"attachment_site")])
         robot_coords[1]-=self.move_Step_amount
         self.move_gripper_to(robot_coords)
     def forward(self):
-        robot_coords=list(self.data.site_xpos[self.model.site_name2id("attachment_site")])
+        robot_coords=list(self.data.site_xpos[mj.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_SITE,"attachment_site")])
         robot_coords[0]+=self.move_Step_amount
         self.move_gripper_to(robot_coords)
     def backward(self):
-        robot_coords=list(self.data.site_xpos[self.model.site_name2id("attachment_site")])
+        robot_coords=list(self.data.site_xpos[mj.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_SITE,"attachment_site")])
         robot_coords[0]-=self.move_Step_amount
         self.move_gripper_to(robot_coords)
 
