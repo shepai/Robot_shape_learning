@@ -340,9 +340,8 @@ if __name__=="__main__":
     e=Env(path="C:/Users/dexte/Documents/GitHub/Robot_shape_learning/Assets/kuka_iiwa_14/",realtime=0,speed=1/440)
     viewer= mj.viewer.launch_passive(e.model, e.data)
     e.setViewer(viewer)
-    e.generate_blocks(5)
+    e.generate_blocks(4)
     e.update_task()
-    
     for i in range(5):
         #self.data.ctrl[0] = 1.0 * np.sin(t)
         e.move_gripper_to([0.4+(i*0.08),0.4,0.1])
