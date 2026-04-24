@@ -97,8 +97,8 @@ class Env:
             size=(0.02*size, 0.02*size, 0.02*size)
         i=len(self.block_ids)
         self.block_ids.append(f"block_{i}")
-        self.colours.append(f"{color[0]} {color[1]} {color[2]} {color[3]}")
-        self.sizes.append(f"{size[0]} {size[1]} {size[2]}")
+        self.colours.append(color)
+        self.sizes.append(size)
         self.block_file.append("cube")
         block_xml = ""
         weld_xml = ""
@@ -150,8 +150,8 @@ class Env:
             </body>
             '''
             self.block_ids.append(f"block_{i}")
-            self.colours.append(f"{1} {0} {0} {1}")
-            self.sizes.append("0.02 0.02 0.02")
+            self.colours.append([1,0,0,1])
+            self.sizes.append([0.02, 0.02, 0.02])
             self.block_file.append("cube")
             # 🔥 one weld per block (inactive by default)
             weld_xml += f'''
